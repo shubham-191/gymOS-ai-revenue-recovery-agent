@@ -118,22 +118,30 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <div class="border-b border-rzp-border flex space-x-8 text-sm font-medium">
-      <button onclick="switchTab('tab-live')" id="btn-tab-live" class="tab-btn py-3 border-b-2 border-blue-500 text-blue-400 flex items-center space-x-2">
+    <div class="border-b border-rzp-border flex space-x-6 text-sm font-medium overflow-x-auto">
+      <button onclick="switchTab('tab-live')" id="btn-tab-live" class="tab-btn py-3 border-b-2 border-blue-500 text-blue-400 flex items-center space-x-2 whitespace-nowrap">
         <i data-lucide="play-circle" class="w-4 h-4"></i>
         <span>Live Scenario Simulator</span>
       </button>
-      <button onclick="switchTab('tab-benchmark')" id="btn-tab-benchmark" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+      <button onclick="switchTab('tab-chat')" id="btn-tab-chat" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+        <i data-lucide="message-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span>Two-Way WhatsApp Negotiator</span>
+      </button>
+      <button onclick="switchTab('tab-b2b')" id="btn-tab-b2b" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
+        <i data-lucide="building" class="w-4 h-4 text-amber-400"></i>
+        <span>B2B Corporate Invoices (AR)</span>
+      </button>
+      <button onclick="switchTab('tab-benchmark')" id="btn-tab-benchmark" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
         <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
-        <span>100-Batch Benchmark Suite</span>
+        <span>100-Batch Benchmark</span>
       </button>
-      <button onclick="switchTab('tab-audit')" id="btn-tab-audit" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+      <button onclick="switchTab('tab-audit')" id="btn-tab-audit" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
         <i data-lucide="scroll-text" class="w-4 h-4"></i>
-        <span>SHA-256 Audit Trail</span>
+        <span>SHA-256 Audit</span>
       </button>
-      <button onclick="switchTab('tab-policies')" id="btn-tab-policies" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+      <button onclick="switchTab('tab-policies')" id="btn-tab-policies" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 whitespace-nowrap">
         <i data-lucide="sliders" class="w-4 h-4"></i>
-        <span>Policy Guardrails</span>
+        <span>Guardrails</span>
       </button>
     </div>
 
@@ -452,6 +460,149 @@
           <i data-lucide="save" class="w-4 h-4"></i>
           <span>Save & Apply Guardrail Boundaries</span>
         </button>
+      </div>
+    </section>
+
+    <!-- TAB: Two-Way WhatsApp Negotiation Simulator -->
+    <section id="tab-chat" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Chat Controls & Context -->
+        <div class="lg:col-span-4 space-y-6 bg-rzp-card p-6 rounded-2xl border border-rzp-border">
+          <div>
+            <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+              <i data-lucide="message-square-code" class="w-5 h-5 text-emerald-400"></i>
+              <span>Customer Objections Simulator</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Select or type real customer objections to watch the AI negotiate, offer plan freezes, downgrades, or Razorpay links.</p>
+          </div>
+
+          <!-- Quick Objection Pills -->
+          <div class="space-y-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Quick Test Objections</span>
+            <div class="flex flex-col space-y-2">
+              <button onclick="sendQuickReply('I am traveling to my hometown for 3 weeks and will resume after that.')" class="p-2.5 text-left text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+                ✈️ <em>"Traveling for 3 weeks"</em> ➔ <strong class="text-emerald-400">Triggers ₹0 Freeze</strong>
+              </button>
+              <button onclick="sendQuickReply('Annual plan is too expensive for me right now. Can I get a cheaper option?')" class="p-2.5 text-left text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+                💰 <em>"Annual is too expensive"</em> ➔ <strong class="text-purple-400">Triggers Monthly Downgrade</strong>
+              </button>
+              <button onclick="sendQuickReply('Salary is delayed this month. I can pay on 5th.')" class="p-2.5 text-left text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+                📅 <em>"Salary delayed, pay on 5th"</em> ➔ <strong class="text-cyan-400">Sets Promise-to-Pay</strong>
+              </button>
+              <button onclick="sendQuickReply('Any student discount available? Will renew today if possible.')" class="p-2.5 text-left text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+                🏷️ <em>"Give me discount"</em> ➔ <strong class="text-blue-400">Bounded 15% Razorpay Link</strong>
+              </button>
+              <button onclick="sendQuickReply('STOP. I have shifted to Mumbai, please cancel.')" class="p-2.5 text-left text-xs rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+                🛑 <em>"Shifted city / Cancel"</em> ➔ <strong class="text-amber-400">Graceful Opt-Out Stop</strong>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2 text-xs">
+            <span class="font-bold text-slate-300 block">Negotiation Rules Active:</span>
+            <ul class="text-slate-400 space-y-1 list-disc list-inside">
+              <li>Max freeze limit: 30 days</li>
+              <li>Downgrade target: Monthly Basic (₹2,499)</li>
+              <li>Retention discount cap: 15%</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- WhatsApp Phone Mockup -->
+        <div class="lg:col-span-8 bg-[#0b141a] rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[580px]">
+          <!-- WhatsApp Top Bar -->
+          <div class="bg-[#202c33] px-5 py-3 flex items-center justify-between border-b border-[#2a3942]">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-sm">
+                IP
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-slate-100 flex items-center space-x-2">
+                  <span>IronPeak GymOS Concierge</span>
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </h4>
+                <p class="text-[11px] text-slate-400">Official Verified Merchant Account</p>
+              </div>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded bg-[#111b21] text-emerald-400 font-mono">Automated WhatsApp Rail</span>
+          </div>
+
+          <!-- Chat Messages Area -->
+          <div id="chat-messages-container" class="flex-1 p-5 overflow-y-auto space-y-4 font-sans text-xs">
+            <!-- Initial AI Recovery Outreach Message -->
+            <div class="flex justify-start">
+              <div class="bg-[#202c33] text-slate-200 p-3.5 rounded-2xl rounded-tl-none max-w-md shadow-md space-y-2">
+                <p>Arre Rahul bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!</p>
+                <p>Aapke active return ke liye humne exclusive renewal link ready kiya hai:</p>
+                <div class="p-2.5 bg-[#111b21] rounded-xl border border-blue-500/30 text-cyan-300 font-mono text-[11px]">
+                  👉 https://rzp.io/i/81d89f03749841
+                </div>
+                <div class="text-[10px] text-slate-400 text-right">10:15 AM · ✓✓</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Area -->
+          <div class="bg-[#202c33] p-3 border-t border-[#2a3942] flex items-center space-x-2">
+            <input id="chat-user-input" type="text" placeholder="Type customer reply / objection..." onkeydown="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-[#2a3942] border-none rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button onclick="sendChatMessage()" class="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: B2B Corporate Invoices & AR Dunning -->
+    <section id="tab-b2b" class="hidden space-y-6">
+      <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-xl text-white flex items-center space-x-2">
+              <i data-lucide="building-2" class="w-6 h-6 text-amber-400"></i>
+              <span>B2B Corporate Wellness Accounts Receivable (AR)</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Automated multi-stage escalating dunning for high-value corporate gym accounts and wellness subscriptions.</p>
+          </div>
+          <button onclick="loadB2BInvoices()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 border border-slate-700">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh Corporate Ledgers</span>
+          </button>
+        </div>
+
+        <!-- Corporate Invoices Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Invoice ID</th>
+                <th class="py-3 px-4">Corporate Client</th>
+                <th class="py-3 px-4">Employees</th>
+                <th class="py-3 px-4">Amount</th>
+                <th class="py-3 px-4">Aging Days</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Autonomous Dunning Action</th>
+              </tr>
+            </thead>
+            <tbody id="b2b-invoices-tbody" class="divide-y divide-slate-800">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Dunning Output Result Box -->
+        <div id="b2b-output-container" class="hidden p-5 bg-slate-950 rounded-2xl border border-amber-500/30 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+              <span>B2B Escalation Action Executed</span>
+            </span>
+            <span id="b2b-dunning-stage-badge" class="text-[10px] px-2.5 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300">--</span>
+          </div>
+          <div id="b2b-dunning-copy-box" class="p-4 bg-slate-900 rounded-xl text-xs text-slate-200 font-sans whitespace-pre-line leading-relaxed border border-slate-800">
+            <!-- Output -->
+          </div>
+        </div>
       </div>
     </section>
 

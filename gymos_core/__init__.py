@@ -2,6 +2,7 @@
 from gymos_core.models import MemberProfile, MembershipTier, FailureReasonCode, RecoveryIntervention
 from gymos_core.event_bus import GymOSEventEnvelope, GymOSEventType
 from gymos_core.mock_gateway import GymOSGateway
+from gymos_core.subscription_lifecycle import SubscriptionLifecycleManager, LifecycleActionType
 
 __all__ = [
     "MemberProfile",
@@ -11,4 +12,6 @@ __all__ = [
     "GymOSEventEnvelope",
     "GymOSEventType",
     "GymOSGateway",
+    "SubscriptionLifecycleManager",
+    "LifecycleActionType",
 ]

@@ -55,6 +55,50 @@ def run_single_demo():
         print(f"    • {note}")
 
 
+from agent.conversational_agent import ConversationalRecoveryAgent
+from agent.b2b_dunning import B2BAccountsReceivableEngine
+
+
+def run_conversational_demo():
+    print("\n" + "=" * 78)
+    print(" 💬 TWO-WAY CONVERSATIONAL WHATSAPP NEGOTIATION DEMO")
+    print("=" * 78)
+    chat_agent = ConversationalRecoveryAgent()
+    member = GymOSGateway.create_sample_member()
+
+    objections = [
+        "I had an injury and broke my leg, need to pause for 30 days.",
+        "Annual plan is too expensive for me right now. Can I get a cheaper option?",
+        "Salary is delayed this month. I will pay on 5th."
+    ]
+
+    for idx, obj in enumerate(objections, 1):
+        print(f"\n[Turn {idx}] Customer WhatsApp Message: '{obj}'")
+        res = chat_agent.handle_incoming_message(member, obj)
+        print(f"    ➔ AI Classified Intent: {res['intent']}")
+        print(f"    ➔ Bounded Action Taken: {res['action_executed'].get('action')}")
+        if res.get("payment_link"):
+            print(f"    ➔ Dynamic Razorpay Link: {res['payment_link']}")
+        print("    ➔ AI WhatsApp Reply:")
+        for line in res["reply_message"].split("\n"):
+            print(f"       {line}")
+
+
+def run_b2b_demo():
+    print("\n" + "=" * 78)
+    print(" 🏢 B2B CORPORATE ACCOUNTS RECEIVABLE (AR) DUNNING DEMO")
+    print("=" * 78)
+    b2b_engine = B2BAccountsReceivableEngine()
+    invoices = b2b_engine.get_sample_corporate_invoices()
+
+    for inv in invoices:
+        res = b2b_engine.evaluate_corporate_dunning(inv)
+        print(f"\n• Corporate Client: {inv.company_name} ({inv.employee_seat_count} seats)")
+        print(f"  Invoice: {inv.invoice_id} | Amount: ₹{inv.invoice_amount_inr:,.2f} | Aging: {inv.days_overdue} days overdue")
+        print(f"  Dunning Stage: {res['dunning_stage']} ➔ Action: {res['action_taken']}")
+        print(f"  B2B Razorpay Portal: {res['payment_link']}")
+
+
 def run_benchmark_demo():
     print("\n" + "=" * 78)
     print(" 📊 RUNNING 100-RECORD BENCHMARK EVALUATION (TRACK 03 RUBRIC)")
@@ -68,5 +112,8 @@ def run_benchmark_demo():
 if __name__ == "__main__":
     print("\nStarting GymOS AI Revenue Recovery Sentinel...")
     run_single_demo()
+    run_conversational_demo()
+    run_b2b_demo()
     run_benchmark_demo()
-    print("\n✨ Demo completed successfully. Start the Web Console via: uvicorn web.app:app --reload --port 8000\n")
+    print("\n✨ Enterprise Demo completed successfully. Start the Web Console via: uvicorn web.app:app --reload --port 8000\n")
+

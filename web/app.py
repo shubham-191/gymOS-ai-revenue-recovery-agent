@@ -15,6 +15,8 @@ from gymos_core.models import MemberProfile, RecoveryIntervention
 from agent.action_orchestrator import RecoveryOrchestrator
 from agent.audit_logger import AuditLogger
 from agent.policy_guardrails import PolicyGuardrailEngine
+from agent.conversational_agent import ConversationalRecoveryAgent
+from agent.b2b_dunning import B2BAccountsReceivableEngine, CorporateInvoice
 from benchmark.evaluation_runner import BenchmarkRunner
 from benchmark.dataset_generator import generate_benchmark_dataset
 from razorpay_client.client import RazorpayRecoveryClient
@@ -55,6 +57,8 @@ orchestrator = RecoveryOrchestrator(
 )
 webhook_processor = WebhookProcessor(rzp_client)
 benchmark_runner = BenchmarkRunner()
+conversational_agent = ConversationalRecoveryAgent(razorpay_client=rzp_client)
+b2b_engine = B2BAccountsReceivableEngine(razorpay_client=rzp_client)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -135,6 +139,44 @@ async def update_policies(req: PolicyUpdateRequest):
     guardrail_engine.strict_opt_out = req.strict_opt_out
     guardrail_engine.vip_threshold = req.vip_threshold_inr
     return {"status": "UPDATED", "policies": req.model_dump()}
+
+
+class ChatMessageRequest(BaseModel):
+    member: MemberProfile
+    message: str
+    history: Optional[List[Dict[str, str]]] = None
+
+
+@app.post("/api/chat/respond")
+async def chat_respond(req: ChatMessageRequest):
+    try:
+        res = conversational_agent.handle_incoming_message(
+            member=req.member,
+            incoming_message=req.message,
+            conversation_history=req.history
+        )
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/b2b/invoices")
+async def get_b2b_invoices():
+    invoices = b2b_engine.get_sample_corporate_invoices()
+    return {"count": len(invoices), "invoices": [inv.model_dump() for inv in invoices]}
+
+
+class B2BDunningRequest(BaseModel):
+    invoice: CorporateInvoice
+
+
+@app.post("/api/b2b/dunning")
+async def trigger_b2b_dunning(req: B2BDunningRequest):
+    try:
+        res = b2b_engine.evaluate_corporate_dunning(req.invoice)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/webhook/razorpay")

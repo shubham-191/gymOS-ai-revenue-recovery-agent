@@ -336,3 +336,192 @@ async function savePolicies() {
     alert("Failed to save policies: " + err.message);
   }
 }
+
+// ==========================================
+// Two-Way WhatsApp Negotiation Simulator
+// ==========================================
+
+function sendQuickReply(text) {
+  document.getElementById("chat-user-input").value = text;
+  sendChatMessage();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById("chat-user-input");
+  const messageText = input.value.trim();
+  if (!messageText) return;
+
+  const container = document.getElementById("chat-messages-container");
+
+  // Append User Bubble (Right)
+  const userBubble = document.createElement("div");
+  userBubble.className = "flex justify-end";
+  userBubble.innerHTML = `
+    <div class="bg-[#005c4b] text-slate-100 p-3 rounded-2xl rounded-tr-none max-w-md shadow-md space-y-1">
+      <p>${escapeHtml(messageText)}</p>
+      <div class="text-[10px] text-emerald-200 text-right">Just now · ✓✓</div>
+    </div>
+  `;
+  container.appendChild(userBubble);
+  input.value = "";
+  container.scrollTop = container.scrollHeight;
+
+  // Typing indicator
+  const typingIndicator = document.createElement("div");
+  typingIndicator.id = "typing-indicator";
+  typingIndicator.className = "flex justify-start";
+  typingIndicator.innerHTML = `
+    <div class="bg-[#202c33] text-slate-400 p-3 rounded-2xl rounded-tl-none text-xs flex items-center space-x-2">
+      <span class="animate-bounce">●</span><span class="animate-bounce delay-100">●</span><span class="animate-bounce delay-200">●</span>
+      <span>AI Concierge thinking & checking policy rules...</span>
+    </div>
+  `;
+  container.appendChild(typingIndicator);
+  container.scrollTop = container.scrollHeight;
+
+  // Current selected member profile
+  const member = {
+    member_id: "mem_blr_4091",
+    name: document.getElementById("input-name").value || "Rahul Sharma",
+    phone: document.getElementById("input-phone").value || "+919876543210",
+    email: "rahul.sharma@example.com",
+    language_preference: "hinglish",
+    membership_tier: document.getElementById("input-tier").value || "QUARTERLY_PRO",
+    membership_amount: parseFloat(document.getElementById("input-amount").value) || 6499.0,
+    plan_start_date: "2026-06-01",
+    plan_expiry_date: "2026-09-01",
+    baseline_visits_per_week: 4.0,
+    actual_visits_last_30_days: 2,
+    days_since_last_checkin: 18,
+    lifetime_paid_inr: 15000.0,
+    previous_payment_method: "UPI_AUTOPAY",
+    consecutive_failed_attempts: 1,
+    opted_out: false,
+    last_failure_code: "NONE"
+  };
+
+  try {
+    const res = await fetch("/api/chat/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ member, message: messageText })
+    });
+    const result = await res.json();
+
+    typingIndicator.remove();
+
+    // Append AI Response Bubble (Left)
+    const aiBubble = document.createElement("div");
+    aiBubble.className = "flex justify-start";
+    
+    let linkBlock = "";
+    if (result.payment_link) {
+      linkBlock = `
+        <div class="p-2.5 bg-[#111b21] rounded-xl border border-emerald-500/30 text-emerald-300 font-mono text-[11px] flex justify-between items-center">
+          <span>${result.payment_link}</span>
+          <a href="${result.payment_link}" target="_blank" class="px-2 py-0.5 rounded bg-emerald-600 text-white font-sans text-[10px]">Open</a>
+        </div>
+      `;
+    }
+
+    aiBubble.innerHTML = `
+      <div class="bg-[#202c33] text-slate-200 p-3.5 rounded-2xl rounded-tl-none max-w-md shadow-md space-y-2">
+        <div class="text-[10px] text-cyan-400 font-mono font-bold flex items-center space-x-1">
+          <span>⚡ Action: ${result.action_executed.action || result.intent}</span>
+        </div>
+        <p class="whitespace-pre-line">${escapeHtml(result.reply_message)}</p>
+        ${linkBlock}
+        <div class="text-[10px] text-slate-400 text-right">Just now · ✓✓</div>
+      </div>
+    `;
+    container.appendChild(aiBubble);
+    container.scrollTop = container.scrollHeight;
+
+    // Refresh audit log
+    await refreshAuditTrail();
+  } catch (err) {
+    typingIndicator.remove();
+    console.error("Chat response error", err);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ==========================================
+// B2B Corporate Accounts Receivable (AR)
+// ==========================================
+
+let globalInvoices = [];
+
+async function loadB2BInvoices() {
+  try {
+    const res = await fetch("/api/b2b/invoices");
+    const data = await res.json();
+    globalInvoices = data.invoices || [];
+
+    const tbody = document.getElementById("b2b-invoices-tbody");
+    tbody.innerHTML = "";
+
+    globalInvoices.forEach((inv, idx) => {
+      let badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      if (inv.days_overdue >= 60) badgeColor = "bg-rose-500/10 text-rose-400 border-rose-500/30";
+      else if (inv.days_overdue >= 30) badgeColor = "bg-orange-500/10 text-orange-400 border-orange-500/30";
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-900/40 transition";
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-mono font-bold text-slate-300">${inv.invoice_id}</td>
+        <td class="py-3 px-4 font-medium text-white">
+          <div>${inv.company_name}</div>
+          <div class="text-[10px] text-slate-400">${inv.contact_person}</div>
+        </td>
+        <td class="py-3 px-4 font-mono">${inv.employee_seat_count} seats</td>
+        <td class="py-3 px-4 font-mono font-bold text-white">₹${inv.invoice_amount_inr.toLocaleString()}</td>
+        <td class="py-3 px-4"><span class="font-mono text-rose-400 font-bold">${inv.days_overdue} days</span></td>
+        <td class="py-3 px-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeColor}">${inv.status}</span></td>
+        <td class="py-3 px-4 text-right">
+          <button onclick="triggerCorporateDunning(${idx})" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-bold text-xs shadow-md transition">
+            Trigger Dunning
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Failed to load B2B invoices", err);
+  }
+}
+
+async function triggerCorporateDunning(index) {
+  const invoice = globalInvoices[index];
+  if (!invoice) return;
+
+  try {
+    const res = await fetch("/api/b2b/dunning", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoice })
+    });
+    const result = await res.json();
+
+    const box = document.getElementById("b2b-output-container");
+    box.classList.remove("hidden");
+    document.getElementById("b2b-dunning-stage-badge").innerText = `${result.dunning_stage} (${result.action_taken})`;
+    document.getElementById("b2b-dunning-copy-box").innerText = result.dunning_notice_copy;
+
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  } catch (err) {
+    alert("Dunning execution failed: " + err.message);
+  }
+}
+
+// Auto-load B2B invoices on init
+setTimeout(() => {
+  loadB2BInvoices();
+}, 500);
+

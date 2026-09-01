@@ -4,6 +4,8 @@ from agent.policy_guardrails import PolicyGuardrailEngine
 from agent.copy_generator import RecoveryCopyGenerator
 from agent.audit_logger import AuditLogger
 from agent.action_orchestrator import RecoveryOrchestrator
+from agent.conversational_agent import ConversationalRecoveryAgent, UserIntentType
+from agent.b2b_dunning import B2BAccountsReceivableEngine, CorporateInvoice
 
 __all__ = [
     "RecoveryDiagnostician",
@@ -12,4 +14,8 @@ __all__ = [
     "RecoveryCopyGenerator",
     "AuditLogger",
     "RecoveryOrchestrator",
+    "ConversationalRecoveryAgent",
+    "UserIntentType",
+    "B2BAccountsReceivableEngine",
+    "CorporateInvoice",
 ]
