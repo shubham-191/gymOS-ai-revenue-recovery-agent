@@ -51,6 +51,18 @@ class AuditLogger:
         """
         Appends an immutable audit event with chained SHA-256 hash.
         """
+        # Always synchronize last_hash with disk tip
+        if self.file_path.exists():
+            try:
+                with open(self.file_path, "r", encoding="utf-8") as f:
+                    lines = [l.strip() for l in f if l.strip()]
+                    if lines:
+                        last_line_data = json.loads(lines[-1])
+                        if "entry_hash" in last_line_data:
+                            self.last_hash = last_line_data["entry_hash"]
+            except Exception:
+                pass
+
         timestamp = datetime.utcnow().isoformat() + "Z"
         
         entry_payload = {
