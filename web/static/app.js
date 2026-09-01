@@ -331,7 +331,9 @@ async function savePolicies() {
     max_discount_percentage: parseFloat(document.getElementById("slider-discount").value),
     max_touches: parseInt(document.getElementById("slider-touches").value),
     strict_opt_out: document.getElementById("toggle-optout").checked,
-    vip_threshold_inr: parseFloat(document.getElementById("slider-vip").value)
+    vip_threshold_inr: parseFloat(document.getElementById("slider-vip").value),
+    razorpay_key_id: document.getElementById("input-rzp-key-id")?.value.trim(),
+    razorpay_key_secret: document.getElementById("input-rzp-key-secret")?.value.trim()
   };
 
   try {
@@ -341,7 +343,7 @@ async function savePolicies() {
       body: JSON.stringify(payload)
     });
     const result = await res.json();
-    alert("Policy guardrails successfully updated!");
+    alert("Policy guardrails & Razorpay credentials successfully updated!");
   } catch (err) {
     alert("Failed to save policies: " + err.message);
   }

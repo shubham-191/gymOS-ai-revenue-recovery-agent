@@ -138,7 +138,9 @@ async def get_policies():
         "max_discount_percentage": guardrail_engine.max_discount,
         "max_touches": guardrail_engine.max_touches,
         "strict_opt_out": guardrail_engine.strict_opt_out,
-        "vip_threshold_inr": guardrail_engine.vip_threshold
+        "vip_threshold_inr": guardrail_engine.vip_threshold,
+        "razorpay_key_id": rzp_client.key_id,
+        "razorpay_key_secret": rzp_client.key_secret
     }
 
 
@@ -147,14 +149,45 @@ class PolicyUpdateRequest(BaseModel):
     max_touches: int
     strict_opt_out: bool
     vip_threshold_inr: float
+    razorpay_key_id: Optional[str] = None
+    razorpay_key_secret: Optional[str] = None
 
 
 @app.post("/api/policies")
 async def update_policies(req: PolicyUpdateRequest):
+    global rzp_client, orchestrator, webhook_processor, conversational_agent, b2b_engine, swarm_coordinator
+
     guardrail_engine.max_discount = req.max_discount_percentage
     guardrail_engine.max_touches = req.max_touches
     guardrail_engine.strict_opt_out = req.strict_opt_out
     guardrail_engine.vip_threshold = req.vip_threshold_inr
+
+    # Update Razorpay client if new keys provided
+    if req.razorpay_key_id and req.razorpay_key_secret:
+        rzp_client = RazorpayRecoveryClient(key_id=req.razorpay_key_id, key_secret=req.razorpay_key_secret)
+        orchestrator.rzp = rzp_client
+        webhook_processor.rzp_client = rzp_client
+        conversational_agent.rzp = rzp_client
+        b2b_engine.rzp = rzp_client
+        swarm_coordinator.rzp = rzp_client
+
+        # Update .env file
+        env_file = BASE_DIR / ".env"
+        if env_file.exists():
+            try:
+                lines = env_file.read_text(encoding="utf-8").splitlines()
+                new_lines = []
+                for line in lines:
+                    if line.startswith("RAZORPAY_KEY_ID="):
+                        new_lines.append(f"RAZORPAY_KEY_ID={req.razorpay_key_id}")
+                    elif line.startswith("RAZORPAY_KEY_SECRET="):
+                        new_lines.append(f"RAZORPAY_KEY_SECRET={req.razorpay_key_secret}")
+                    else:
+                        new_lines.append(line)
+                env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+            except Exception as e:
+                logger.warning("Could not write updated keys to .env: %s", e)
+
     return {"status": "UPDATED", "policies": req.model_dump()}
 
 
