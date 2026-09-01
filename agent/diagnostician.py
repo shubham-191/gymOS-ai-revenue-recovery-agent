@@ -1,10 +1,8 @@
-"""
-Multi-Signal Root-Cause Diagnostician.
-Categorizes revenue risks by fusing behavioral telemetry (attendance)
-and payment failure signals.
-"""
-from typing import Dict, Any, Tuple
+import json
 import logging
+from typing import Dict, Any, Tuple, Optional
+import requests
+from config.settings import settings
 from gymos_core.models import MemberProfile, FailureReasonCode
 
 logger = logging.getLogger(__name__)
@@ -21,13 +19,77 @@ class RootCauseCategory:
 
 
 class RecoveryDiagnostician:
-    def __init__(self, provider: str = "mock_heuristic"):
-        self.provider = provider
+    def __init__(self, provider: Optional[str] = None):
+        self.provider = provider or settings.LLM_PROVIDER
+        self.openai_key = settings.OPENAI_API_KEY
+        self.gemini_key = settings.GEMINI_API_KEY
 
     def diagnose(self, member: MemberProfile) -> Dict[str, Any]:
         """
         Analyzes member telemetry to determine root-cause and confidence score.
+        Uses OpenAI / Gemini if configured, otherwise calibrated heuristic engine.
         """
+        # Try Live LLM if API Key is configured
+        if self.openai_key and len(self.openai_key) > 10:
+            llm_res = self._call_openai_diagnostics(member)
+            if llm_res:
+                return llm_res
+        elif self.gemini_key and len(self.gemini_key) > 10:
+            llm_res = self._call_gemini_diagnostics(member)
+            if llm_res:
+                return llm_res
+
+        return self._heuristic_diagnose(member)
+
+    def _call_openai_diagnostics(self, member: MemberProfile) -> Optional[Dict[str, Any]]:
+        try:
+            prompt = f"""You are an AI Revenue Recovery Diagnostician for GymOS.
+Analyze this gym member's telemetry and diagnose the root cause of revenue risk:
+Member: {member.name}
+Plan: {member.membership_tier.value} (₹{member.membership_amount})
+Attendance: {member.actual_visits_last_30_days} visits in last 30 days (Days since last checkin: {member.days_since_last_checkin})
+Failure Code: {member.last_failure_code.value}
+Consecutive Fails: {member.consecutive_failed_attempts}
+Opted Out: {member.opted_out}
+
+Categorize into exactly one of: [TECHNICAL_BANKING_FAILURE, INSUFFICIENT_FUNDS_TIMING, SILENT_CHURN_DISENGAGEMENT, CARD_MANDATE_EXPIRED, AFFORDABILITY_PRICE_SENSITIVE, HIGH_VALUE_VIP_RISK].
+Respond in JSON format with keys: "root_cause", "confidence" (0.0 to 1.0), "reasoning", "signals_matched" (list of strings)."""
+
+            res = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {self.openai_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=5
+            )
+            if res.status_code == 200:
+                data = res.json()["choices"][0]["message"]["content"]
+                return json.loads(data)
+        except Exception as e:
+            logger.warning("OpenAI diagnostic call failed (%s). Falling back to heuristic.", e)
+        return None
+
+    def _call_gemini_diagnostics(self, member: MemberProfile) -> Optional[Dict[str, Any]]:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
+            prompt = f"""You are an AI Revenue Recovery Diagnostician for GymOS.
+Analyze member telemetry and output JSON:
+Member: {member.name}, Tier: {member.membership_tier.value} (₹{member.membership_amount}), Visits: {member.actual_visits_last_30_days}/30d, Days Inactive: {member.days_since_last_checkin}, Failure: {member.last_failure_code.value}.
+Output JSON format: {{"root_cause": "...", "confidence": 0.9, "reasoning": "...", "signals_matched": []}}"""
+            res = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=5)
+            if res.status_code == 200:
+                text = res.json()["candidates"][0]["content"]["parts"][0]["text"]
+                # Clean potential markdown backticks
+                cleaned = text.replace("```json", "").replace("```", "").strip()
+                return json.loads(cleaned)
+        except Exception as e:
+            logger.warning("Gemini diagnostic call failed (%s). Falling back to heuristic.", e)
+        return None
+
+    def _heuristic_diagnose(self, member: MemberProfile) -> Dict[str, Any]:
         # VIP / Corporate High-Value Check
         if member.membership_amount >= 50000.0:
             return {
