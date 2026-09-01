@@ -659,6 +659,11 @@ async function loadOptimizerRails() {
             <span class="font-mono text-cyan-300">${rail.average_latency_ms}ms</span>
           </div>
         </div>
+        <div class="pt-2 border-t border-slate-800/80">
+          <button onclick="simulateOutage('${rail.rail_id}', ${isHealthy})" class="w-full py-1.5 px-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center space-x-1 ${isHealthy ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30'}">
+            <span>${isHealthy ? '⚠️ Trip Outage' : '✓ Restore Healthy'}</span>
+          </button>
+        </div>
       `;
       container.appendChild(card);
     });
@@ -678,6 +683,33 @@ async function simulateOutage(railId, trip) {
   } catch (err) {
     alert("Outage simulation failed: " + err.message);
   }
+}
+
+async function simulateScenarioOutage(railsToTrip) {
+  const allRails = ["rail_hdfc", "rail_icici", "rail_axis", "rail_dynamic_qr"];
+  for (const r of allRails) {
+    const shouldTrip = railsToTrip.includes(r);
+    await fetch("/api/optimizer/simulate-outage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rail_id: r, trip_circuit: shouldTrip })
+    });
+  }
+  await loadOptimizerRails();
+  await testRouteTransaction();
+}
+
+async function restoreAllRails() {
+  const allRails = ["rail_hdfc", "rail_icici", "rail_axis", "rail_dynamic_qr"];
+  for (const r of allRails) {
+    await fetch("/api/optimizer/simulate-outage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rail_id: r, trip_circuit: false })
+    });
+  }
+  await loadOptimizerRails();
+  await testRouteTransaction();
 }
 
 async function testRouteTransaction() {

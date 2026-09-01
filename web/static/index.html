@@ -721,21 +721,36 @@
 
         <!-- Failover Simulation & Routing Playground -->
         <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Test Dynamic Failover Under Live Bank Outage</h4>
-          <p class="text-xs text-slate-400">Simulate HDFC UPI server going down (degraded to 32% success rate). Watch the Optimizer instantly trip the circuit breaker and reroute payments to ICICI/Axis.</p>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Test Cascading Failover & Bank Resiliency</h4>
+              <p class="text-xs text-slate-400">Test how the Optimizer routes to <strong>ICICI</strong> (Backup 1), <strong>Axis</strong> (Backup 2), or <strong>Dynamic UPI QR</strong> (Ultimate Fallback) as banks go down.</p>
+            </div>
+            <button onclick="restoreAllRails()" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center space-x-1.5 self-start">
+              <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>Restore All 4 Rails Healthy</span>
+            </button>
+          </div>
 
-          <div class="flex flex-wrap items-center gap-3 pt-2">
-            <button onclick="simulateOutage('rail_hdfc', true)" class="px-4 py-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition flex items-center space-x-2">
-              <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i>
-              <span>Inject HDFC UPI Outage (Trip Circuit)</span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <button onclick="simulateScenarioOutage(['rail_hdfc'])" class="p-3 text-left rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+              <div class="text-xs font-bold text-rose-400">1. Trip HDFC Only</div>
+              <div class="text-[11px] text-slate-400">➔ Fails over to <strong class="text-cyan-400">ICICI Smart Gateway</strong></div>
             </button>
-            <button onclick="simulateOutage('rail_hdfc', false)" class="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center space-x-2">
-              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-              <span>Restore HDFC Healthy</span>
+            <button onclick="simulateScenarioOutage(['rail_hdfc', 'rail_icici'])" class="p-3 text-left rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+              <div class="text-xs font-bold text-rose-400">2. Trip HDFC + ICICI</div>
+              <div class="text-[11px] text-slate-400">➔ Fails over to <strong class="text-purple-400">Axis Direct Rail</strong></div>
             </button>
-            <button onclick="testRouteTransaction()" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center space-x-2 shadow-lg shadow-blue-500/25">
+            <button onclick="simulateScenarioOutage(['rail_hdfc', 'rail_icici', 'rail_axis'])" class="p-3 text-left rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition">
+              <div class="text-xs font-bold text-rose-400">3. Trip All 3 Major Banks</div>
+              <div class="text-[11px] text-slate-400">➔ Fails over to <strong class="text-emerald-400">Dynamic UPI QR</strong></div>
+            </button>
+          </div>
+
+          <div class="pt-2">
+            <button onclick="testRouteTransaction()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/25">
               <i data-lucide="send" class="w-4 h-4"></i>
-              <span>Route Sample ₹6,499 Transaction</span>
+              <span>Route Sample ₹6,499 Transaction Now</span>
             </button>
           </div>
 
