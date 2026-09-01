@@ -520,8 +520,181 @@ async function triggerCorporateDunning(index) {
   }
 }
 
-// Auto-load B2B invoices on init
+// Auto-load B2B invoices and Optimizer rails on init
 setTimeout(() => {
   loadB2BInvoices();
+  loadOptimizerRails();
 }, 500);
+
+// ==========================================
+// Multi-Agent War Room Swarm Visualizer
+// ==========================================
+
+async function runSwarmWarRoom() {
+  const btn = document.getElementById("btn-run-swarm");
+  btn.innerHTML = `<span class="animate-spin inline-block mr-2">🔄</span> Swarm In Session...`;
+  btn.disabled = true;
+
+  const member = {
+    member_id: "mem_blr_4091",
+    name: document.getElementById("input-name").value || "Rahul Sharma",
+    phone: document.getElementById("input-phone").value || "+919876543210",
+    email: "rahul.sharma@example.com",
+    language_preference: "hinglish",
+    membership_tier: document.getElementById("input-tier").value || "QUARTERLY_PRO",
+    membership_amount: parseFloat(document.getElementById("input-amount").value) || 6499.0,
+    plan_start_date: "2026-06-01",
+    plan_expiry_date: "2026-09-01",
+    baseline_visits_per_week: 4.0,
+    actual_visits_last_30_days: 2,
+    days_since_last_checkin: 18,
+    lifetime_paid_inr: 15000.0,
+    previous_payment_method: "UPI_AUTOPAY",
+    consecutive_failed_attempts: 1,
+    opted_out: false,
+    last_failure_code: "NONE"
+  };
+
+  try {
+    const res = await fetch("/api/swarm/execute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(member)
+    });
+    const result = await res.json();
+
+    document.getElementById("swarm-status-badge").innerText = `Status: ${result.status} | Rail: ${result.gateway_rail || 'N/A'}`;
+
+    // Animate Nodes
+    const nodeKeys = ["sentinel", "forensic", "auditor", "negotiator", "settlement"];
+    nodeKeys.forEach(k => {
+      const nodeEl = document.getElementById(`node-${k}`);
+      const dotEl = document.getElementById(`dot-${k}`);
+      if (nodeEl && dotEl) {
+        nodeEl.className = "p-4 bg-slate-900 rounded-2xl border border-purple-500/50 space-y-2 relative shadow-lg shadow-purple-500/10";
+        dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+      }
+    });
+
+    // Populate Stream
+    const feed = document.getElementById("swarm-feed-container");
+    feed.innerHTML = "";
+
+    (result.steps || []).forEach(step => {
+      const stepCard = document.createElement("div");
+      stepCard.className = "p-3.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5";
+      stepCard.innerHTML = `
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="text-purple-400 font-bold">${step.agent_name} (${step.agent_role})</span>
+          <span class="text-slate-500">${step.timestamp}</span>
+        </div>
+        <div class="text-slate-200">${escapeHtml(step.reasoning_trace)}</div>
+        <div class="text-[10px] text-cyan-400 font-mono bg-slate-950 p-2 rounded-lg mt-1 border border-slate-900">
+          Output: ${JSON.stringify(step.output_produced)}
+        </div>
+      `;
+      feed.appendChild(stepCard);
+    });
+
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  } catch (err) {
+    alert("Swarm execution failed: " + err.message);
+  } finally {
+    btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 mr-2"></i><span>Execute 5-Agent War Room</span>`;
+    btn.disabled = false;
+    if (window.lucide) {
+      lucide.createIcons();
+    }
+  }
+}
+
+// ==========================================
+// Razorpay Optimizer & Smart Router
+// ==========================================
+
+async function loadOptimizerRails() {
+  try {
+    const res = await fetch("/api/optimizer/health");
+    const data = await res.json();
+    const container = document.getElementById("optimizer-rails-container");
+    container.innerHTML = "";
+
+    (data.rails || []).forEach(rail => {
+      const isHealthy = rail.circuit_state === "CLOSED";
+      const badgeColor = isHealthy ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30";
+
+      const card = document.createElement("div");
+      card.className = "p-5 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 relative";
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Priority ${rail.priority}</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${badgeColor}">${rail.circuit_state}</span>
+        </div>
+        <div>
+          <h4 class="font-bold text-xs text-white">${rail.gateway_name}</h4>
+          <span class="text-[10px] text-slate-500 font-mono">${rail.primary_protocol}</span>
+        </div>
+        <div class="space-y-1 text-[11px]">
+          <div class="flex justify-between text-slate-400">
+            <span>Success Rate</span>
+            <span class="font-bold ${rail.success_rate_pct >= 90 ? 'text-emerald-400' : 'text-rose-400'}">${rail.success_rate_pct}%</span>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full ${rail.success_rate_pct >= 90 ? 'bg-emerald-500' : 'bg-rose-500'}" style="width: ${rail.success_rate_pct}%"></div>
+          </div>
+          <div class="flex justify-between text-slate-400 pt-1">
+            <span>Avg Latency</span>
+            <span class="font-mono text-cyan-300">${rail.average_latency_ms}ms</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Failed to load optimizer rails", err);
+  }
+}
+
+async function simulateOutage(railId, trip) {
+  try {
+    const res = await fetch("/api/optimizer/simulate-outage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rail_id: railId, trip_circuit: trip })
+    });
+    await loadOptimizerRails();
+  } catch (err) {
+    alert("Outage simulation failed: " + err.message);
+  }
+}
+
+async function testRouteTransaction() {
+  try {
+    const res = await fetch("/api/optimizer/route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount_inr: 6499.0 })
+    });
+    const result = await res.json();
+
+    const box = document.getElementById("optimizer-route-result");
+    box.classList.remove("hidden");
+    box.innerHTML = `
+      <div class="flex items-center justify-between font-bold">
+        <span class="text-emerald-400">⚡ Dynamic Routing Decision Completed</span>
+        <span class="text-slate-400">${result.failover_triggered ? '⚠️ FAILOVER ACTIVATED' : '✓ DIRECT ROUTED'}</span>
+      </div>
+      <div class="space-y-1 text-slate-300">
+        <div>• Selected Gateway: <strong class="text-white">${result.gateway_name}</strong> (${result.protocol_used})</div>
+        <div>• Latency / Health: <span class="text-cyan-300">${result.expected_latency_ms}ms</span> | <span class="text-emerald-400">${result.gateway_success_rate}% Success</span></div>
+        <div>• Routing Reason: <span class="text-purple-300">${result.routing_reason}</span></div>
+      </div>
+    `;
+  } catch (err) {
+    alert("Routing test failed: " + err.message);
+  }
+}
+
 

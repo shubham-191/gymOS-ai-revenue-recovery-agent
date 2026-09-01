@@ -99,6 +99,53 @@ def run_b2b_demo():
         print(f"  B2B Razorpay Portal: {res['payment_link']}")
 
 
+from agent.multi_agent_swarm import MultiAgentWarRoomCoordinator
+from razorpay_client.smart_optimizer import SmartPaymentRouter
+
+
+def run_swarm_demo():
+    print("\n" + "=" * 78)
+    print(" 🤖 MULTI-AGENT RECOVERY WAR ROOM (SWARM ARCHITECTURE) DEMO")
+    print("=" * 78)
+    coordinator = MultiAgentWarRoomCoordinator()
+    member = GymOSGateway.create_sample_member()
+    res = coordinator.run_war_room_pipeline(member)
+
+    print(f"\n[War Room ID: {res['war_room_id']}] Status: {res['status']}")
+    print(f"• Final Verdict: {res['final_verdict']} | Discount: {res['discount_applied_pct']}% | Final Price: ₹{res['final_amount_inr']:,.2f}")
+    print(f"• Dynamic Razorpay Link: {res['payment_link']}")
+    print(f"• Routed Gateway: {res['gateway_rail']}")
+    print(f"• SHA-256 Block Signature: {res['sha256_audit_hash']}")
+
+    print("\n--- 5-Agent Inter-Agent Reasoning Trace ---")
+    for step in res["steps"]:
+        print(f"  Step {step['step_number']} [{step['agent_name']} - {step['agent_role']}]:")
+        print(f"    ➔ Status: {step['status']}")
+        print(f"    ➔ Reasoning: {step['reasoning_trace']}")
+
+
+def run_optimizer_demo():
+    print("\n" + "=" * 78)
+    print(" ⚡ RAZORPAY OPTIMIZER & DYNAMIC BANK FAILOVER ROUTING DEMO")
+    print("=" * 78)
+    router = SmartPaymentRouter()
+
+    # Step 1: Normal Route
+    print("\n[1] Normal Traffic (All Banking Rails Healthy):")
+    res1 = router.route_transaction(6499.0)
+    print(f"    • Selected Rail: {res1['gateway_name']} ({res1['protocol_used']})")
+    print(f"    • Success Rate:  {res1['gateway_success_rate']}% | Latency: {res1['expected_latency_ms']}ms")
+    print(f"    • Failover:      {res1['failover_triggered']} ({res1['routing_reason']})")
+
+    # Step 2: Inject HDFC Outage & Retest
+    print("\n[2] Injected Simulated Outage on HDFC UPI (Circuit Tripped):")
+    router.simulate_gateway_outage("rail_hdfc", trip_circuit=True)
+    res2 = router.route_transaction(6499.0)
+    print(f"    • Auto-Failover Rail: {res2['gateway_name']} ({res2['protocol_used']})")
+    print(f"    • Success Rate:       {res2['gateway_success_rate']}% | Latency: {res2['expected_latency_ms']}ms")
+    print(f"    • Failover Active:    {res2['failover_triggered']} ({res2['routing_reason']})")
+
+
 def run_benchmark_demo():
     print("\n" + "=" * 78)
     print(" 📊 RUNNING 100-RECORD BENCHMARK EVALUATION (TRACK 03 RUBRIC)")
@@ -114,6 +161,9 @@ if __name__ == "__main__":
     run_single_demo()
     run_conversational_demo()
     run_b2b_demo()
+    run_swarm_demo()
+    run_optimizer_demo()
     run_benchmark_demo()
-    print("\n✨ Enterprise Demo completed successfully. Start the Web Console via: uvicorn web.app:app --reload --port 8000\n")
+    print("\n✨ Complete Enterprise Demo completed successfully. Start the Web Console via: uvicorn web.app:app --reload --port 8000\n")
+
 

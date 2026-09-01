@@ -17,10 +17,12 @@ from agent.audit_logger import AuditLogger
 from agent.policy_guardrails import PolicyGuardrailEngine
 from agent.conversational_agent import ConversationalRecoveryAgent
 from agent.b2b_dunning import B2BAccountsReceivableEngine, CorporateInvoice
+from agent.multi_agent_swarm import MultiAgentWarRoomCoordinator
 from benchmark.evaluation_runner import BenchmarkRunner
 from benchmark.dataset_generator import generate_benchmark_dataset
 from razorpay_client.client import RazorpayRecoveryClient
 from razorpay_client.webhook_handler import WebhookProcessor
+from razorpay_client.smart_optimizer import SmartPaymentRouter
 
 app = FastAPI(
     title="GymOS AI Revenue Recovery Engine",
@@ -50,6 +52,7 @@ guardrail_engine = PolicyGuardrailEngine(
     vip_threshold_inr=settings.VIP_ESCALATION_THRESHOLD_INR
 )
 rzp_client = RazorpayRecoveryClient()
+smart_router = SmartPaymentRouter()
 orchestrator = RecoveryOrchestrator(
     razorpay_client=rzp_client,
     audit_logger=audit_logger,
@@ -59,6 +62,12 @@ webhook_processor = WebhookProcessor(rzp_client)
 benchmark_runner = BenchmarkRunner()
 conversational_agent = ConversationalRecoveryAgent(razorpay_client=rzp_client)
 b2b_engine = B2BAccountsReceivableEngine(razorpay_client=rzp_client)
+swarm_coordinator = MultiAgentWarRoomCoordinator(
+    razorpay_client=rzp_client,
+    audit_logger=audit_logger,
+    guardrail_engine=guardrail_engine,
+    smart_router=smart_router
+)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -177,6 +186,40 @@ async def trigger_b2b_dunning(req: B2BDunningRequest):
         return res
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/swarm/execute")
+async def execute_swarm(member: MemberProfile):
+    try:
+        res = swarm_coordinator.run_war_room_pipeline(member)
+        return res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/optimizer/health")
+async def get_optimizer_health():
+    return {"rails": smart_router.get_all_rails_status()}
+
+
+class RouteTransactionRequest(BaseModel):
+    amount_inr: float
+    preferred_method: Optional[str] = None
+
+
+@app.post("/api/optimizer/route")
+async def route_transaction(req: RouteTransactionRequest):
+    return smart_router.route_transaction(req.amount_inr, req.preferred_method)
+
+
+class SimulateOutageRequest(BaseModel):
+    rail_id: str
+    trip_circuit: bool = True
+
+
+@app.post("/api/optimizer/simulate-outage")
+async def simulate_outage(req: SimulateOutageRequest):
+    return smart_router.simulate_gateway_outage(req.rail_id, req.trip_circuit)
 
 
 @app.post("/api/webhook/razorpay")
