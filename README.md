@@ -14,13 +14,14 @@
 
 ## 📌 Problem Statement & Why Now
 
-Subscription and gym businesses in India silently lose **15% to 25% of annual recurring revenue (ARR)** due to four fragmented failure points:
+Subscription and gym businesses in India silently lose **15% to 25% of annual recurring revenue (ARR)** due to fragmented failure points:
 1. **Silent Churn**: Members stop showing up (physical disengagement) 2–3 weeks before renewal, making standard email/SMS dunning completely ineffective.
 2. **Recurring Mandate Drops**: UPI Autopay / card tokens expire or get invalidated without a frictionless re-authorization path.
-3. **Salary Timing Friction**: Mandates trigger during month-end cash flow dips rather than salary credit windows (1st–5th of the month).
-4. **Naive "Dumb" Retries**: Traditional payment systems blindly retry at random intervals, irritating customers, eroding margins, and triggering bank rate limits.
+3. **Objection Handling Gaps**: Rigid systems fail when members have temporary life events (injuries, travel, month-end cash crunches) because they lack two-way conversational negotiation.
+4. **B2B Corporate Invoice Aging**: Uncollected corporate wellness accounts (₹1L – ₹5L) get stuck in 60-day receivables without automated escalating dunning.
+5. **Naive "Dumb" Retries**: Traditional payment systems blindly retry at random intervals, irritating customers, eroding margins, and triggering bank rate limits.
 
-**GymOS AI Revenue Recovery Sentinel** closes this loop: fusing **physical/behavioral telemetry** (GymOS attendance drops) with **transactional failure codes** (Razorpay webhooks) to diagnose the root cause, enforce **deterministic merchant guardrails**, generate **dynamic Razorpay Payment Links**, and execute **bounded multi-channel recovery**.
+**GymOS AI Revenue Recovery Sentinel** closes this loop: fusing **physical/behavioral telemetry** (GymOS attendance drops) with **transactional failure codes** (Razorpay webhooks) to diagnose the root cause, enforce **deterministic merchant guardrails**, execute **two-way WhatsApp negotiations**, and automate **B2B corporate invoice dunning on Razorpay Rails**.
 
 ---
 
