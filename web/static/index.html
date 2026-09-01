@@ -462,11 +462,31 @@
               </div>
             </div>
           </div>
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-blue-500/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-semibold text-blue-300 flex items-center space-x-2">
+                <i data-lucide="credit-card" class="w-4 h-4 text-blue-400"></i>
+                <span>Razorpay Test Mode API Credentials (Active)</span>
+              </label>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Sandbox Live</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label class="text-[10px] text-slate-400 block">Key ID</label>
+                <input id="input-rzp-key-id" type="text" value="rzp_test_TCbqe6Tl4iJmyU" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs font-mono text-cyan-300">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 block">Key Secret</label>
+                <input id="input-rzp-key-secret" type="password" value="oIVnCvQL10axnmfpf1uLFDpR" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs font-mono text-cyan-300">
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400">Connected to your Razorpay Sandbox. Generated payment links are live Razorpay checkout sessions.</p>
+          </div>
         </div>
 
-        <button onclick="savePolicies()" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-2 transition">
+        <button onclick="savePolicies()" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-2 transition shadow-lg shadow-blue-500/25">
           <i data-lucide="save" class="w-4 h-4"></i>
-          <span>Save & Apply Guardrail Boundaries</span>
+          <span>Save & Apply Settings</span>
         </button>
       </div>
     </section>
