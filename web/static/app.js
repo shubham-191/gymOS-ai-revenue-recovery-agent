@@ -28,6 +28,14 @@ function switchTab(tabId) {
     activeBtn.classList.add("border-blue-500", "text-blue-400");
   }
 
+  if (tabId === "tab-optimizer") {
+    loadOptimizerRails();
+  } else if (tabId === "tab-b2b") {
+    loadB2BInvoices();
+  } else if (tabId === "tab-audit") {
+    refreshAuditTrail();
+  }
+
   if (window.lucide) {
     lucide.createIcons();
   }
