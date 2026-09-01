@@ -1,0 +1,56 @@
+{
+  "merchant_name": "IronPeak Fitness GymOS",
+  "currency": "INR",
+  "guardrails": {
+    "max_discount_percentage": 15.0,
+    "max_recovery_touches": 3,
+    "min_touch_cooldown_hours": 24,
+    "strict_opt_out_stop": true,
+    "vip_escalation_threshold_inr": 50000.0,
+    "allowed_channels": ["whatsapp", "email", "sms"]
+  },
+  "playbooks": {
+    "TECHNICAL_BANKING_FAILURE": {
+      "strategy": "SILENT_SMART_RETRY",
+      "description": "Network timeout or bank UPI downtime. Schedule automated retry in 4-6 hours with zero merchant discount.",
+      "default_discount": 0.0,
+      "preferred_channel": "silent_gateway_retry",
+      "retry_delay_hours": 4
+    },
+    "INSUFFICIENT_FUNDS_TIMING": {
+      "strategy": "SALARY_WINDOW_RETRY",
+      "description": "Insufficient balance near month end. Align retry window with 1st-5th salary cycle + friendly WhatsApp nudge.",
+      "default_discount": 0.0,
+      "preferred_channel": "whatsapp",
+      "retry_delay_hours": 48
+    },
+    "SILENT_CHURN_DISENGAGEMENT": {
+      "strategy": "REACTIVATION_CONCIERGE",
+      "description": "Member attendance dropped >70% in last 3 weeks. Offer personal trainer check-in + 10% loyalty retention credit.",
+      "default_discount": 10.0,
+      "preferred_channel": "whatsapp",
+      "retry_delay_hours": 12
+    },
+    "CARD_MANDATE_EXPIRED": {
+      "strategy": "PAYMENT_LINK_UPDATE",
+      "description": "Recurring mandate token invalidated. Generate dynamic Razorpay Payment Link for instant authorization.",
+      "default_discount": 0.0,
+      "preferred_channel": "whatsapp",
+      "retry_delay_hours": 2
+    },
+    "AFFORDABILITY_PRICE_SENSITIVE": {
+      "strategy": "DOWNGRADE_OR_DISCOUNT",
+      "description": "Explicit price friction. Offer maximum allowed 15% discount or quarterly tier downgrade.",
+      "default_discount": 15.0,
+      "preferred_channel": "whatsapp",
+      "retry_delay_hours": 6
+    },
+    "HIGH_VALUE_VIP_RISK": {
+      "strategy": "HUMAN_ESCALATION",
+      "description": "Annual corporate or VIP plan > ₹50,000. Escalate directly to Gym General Manager.",
+      "default_discount": 0.0,
+      "preferred_channel": "manager_call_ticket",
+      "retry_delay_hours": 1
+    }
+  }
+}

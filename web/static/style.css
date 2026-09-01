@@ -1,0 +1,29 @@
+/* GymOS AI Recovery Sentinel UI Styling */
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(51, 149, 255, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(51, 149, 255, 0.35);
+  }
+}
+
+.tab-btn {
+  transition: all 0.2s ease;
+}
+
+/* Custom Scrollbar for Audit Log */
+#audit-log-container::-webkit-scrollbar {
+  width: 6px;
+}
+#audit-log-container::-webkit-scrollbar-track {
+  background: #0a0d14;
+}
+#audit-log-container::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+#audit-log-container::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

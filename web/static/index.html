@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GymOS AI Revenue Recovery Sentinel — Razorpay Buildathon (Track 03)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            rzp: {
+              blue: '#0c2340',
+              accent: '#3395ff',
+              emerald: '#10b981',
+              dark: '#0a0d14',
+              card: '#121824',
+              border: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-rzp-dark text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+  <!-- Top Navigation -->
+  <header class="border-b border-rzp-border bg-rzp-card/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-black text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-200">GymOS AI</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30 font-semibold">Track 03 Sentinel</span>
+          </div>
+          <p class="text-xs text-slate-400">Autonomous Bounded Revenue Recovery on Razorpay Rails</p>
+        </div>
+      </div>
+
+      <!-- Mode & Status Badges -->
+      <div class="flex items-center space-x-4">
+        <div id="rzp-mode-badge" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="font-medium">Razorpay Gateway: Active</span>
+        </div>
+        <div class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-blue-400"></i>
+          <span>SHA-256 Audit: Verified</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- KPI Summary Row -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+      <div class="bg-rzp-card p-5 rounded-2xl border border-rzp-border relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">AI Recovery Rate</span>
+          <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
+        </div>
+        <div class="mt-4 flex items-baseline space-x-2">
+          <span id="kpi-rate" class="text-3xl font-black text-white">78.0%</span>
+          <span class="text-xs text-emerald-400 font-semibold">+60% vs baseline</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Across 100 benchmark scenarios</p>
+      </div>
+
+      <div class="bg-rzp-card p-5 rounded-2xl border border-rzp-border relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gross GMV Recovered</span>
+          <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400"><i data-lucide="indian-rupee" class="w-5 h-5"></i></div>
+        </div>
+        <div class="mt-4 flex items-baseline space-x-2">
+          <span id="kpi-gmv" class="text-3xl font-black text-white">₹3,78,500</span>
+          <span class="text-xs text-blue-400 font-semibold">from ₹4.8L at risk</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Recovered via Dynamic Razorpay Links</p>
+      </div>
+
+      <div class="bg-rzp-card p-5 rounded-2xl border border-rzp-border relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Net Recovery ROI</span>
+          <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400"><i data-lucide="zap" class="w-5 h-5"></i></div>
+        </div>
+        <div class="mt-4 flex items-baseline space-x-2">
+          <span id="kpi-roi" class="text-3xl font-black text-white">17.8x</span>
+          <span class="text-xs text-purple-400 font-semibold">Net Profit Multiplier</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">₹3.57L net gain after discount budget</p>
+      </div>
+
+      <div class="bg-rzp-card p-5 rounded-2xl border border-rzp-border relative overflow-hidden group hover:border-blue-500/40 transition">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Policy Compliance</span>
+          <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400"><i data-lucide="check-check" class="w-5 h-5"></i></div>
+        </div>
+        <div class="mt-4 flex items-baseline space-x-2">
+          <span id="kpi-compliance" class="text-3xl font-black text-white">100%</span>
+          <span class="text-xs text-cyan-400 font-semibold">0 Violations</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">Deterministic guardrails enforced</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-rzp-border flex space-x-8 text-sm font-medium">
+      <button onclick="switchTab('tab-live')" id="btn-tab-live" class="tab-btn py-3 border-b-2 border-blue-500 text-blue-400 flex items-center space-x-2">
+        <i data-lucide="play-circle" class="w-4 h-4"></i>
+        <span>Live Scenario Simulator</span>
+      </button>
+      <button onclick="switchTab('tab-benchmark')" id="btn-tab-benchmark" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+        <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+        <span>100-Batch Benchmark Suite</span>
+      </button>
+      <button onclick="switchTab('tab-audit')" id="btn-tab-audit" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+        <i data-lucide="scroll-text" class="w-4 h-4"></i>
+        <span>SHA-256 Audit Trail</span>
+      </button>
+      <button onclick="switchTab('tab-policies')" id="btn-tab-policies" class="tab-btn py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2">
+        <i data-lucide="sliders" class="w-4 h-4"></i>
+        <span>Policy Guardrails</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Live Scenario Simulator -->
+    <section id="tab-live" class="space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left: Scenario Selector & Form -->
+        <div class="lg:col-span-5 space-y-6 bg-rzp-card p-6 rounded-2xl border border-rzp-border">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+              <i data-lucide="user-check" class="w-5 h-5 text-blue-400"></i>
+              <span>Select GymOS Member Profile</span>
+            </h3>
+            <button onclick="loadRandomScenario()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1">
+              <i data-lucide="shuffle" class="w-3 h-3"></i>
+              <span>Randomize</span>
+            </button>
+          </div>
+
+          <div class="space-y-4 text-sm">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 mb-1">Preset Benchmark Scenario</label>
+              <select id="scenario-selector" onchange="selectScenarioFromDropdown(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <option value="">-- Load Sample Scenario --</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Member Name</label>
+                <input id="input-name" type="text" value="Rahul Sharma" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Phone (WhatsApp)</label>
+                <input id="input-phone" type="text" value="+919876543210" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Membership Tier</label>
+                <select id="input-tier" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs">
+                  <option value="MONTHLY_BASIC">Monthly Basic (₹2,499)</option>
+                  <option value="QUARTERLY_PRO" selected>Quarterly Pro (₹6,499)</option>
+                  <option value="ANNUAL_ELITE">Annual Elite (₹19,999)</option>
+                  <option value="CORPORATE_VIP">Corporate VIP (₹60,000)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Membership Amount (₹)</label>
+                <input id="input-amount" type="number" value="6499" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs">
+              </div>
+            </div>
+
+            <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+              <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block">GymOS Behavioral & Failure Telemetry</span>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-400">Days Since Last Check-in</label>
+                  <input id="input-days-inactive" type="number" value="18" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400">Visits in Last 30 Days</label>
+                  <input id="input-visits" type="number" value="2" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[11px] text-slate-400">Payment Failure Code</label>
+                  <select id="input-failure-code" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                    <option value="INSUFFICIENT_FUNDS">INSUFFICIENT_FUNDS</option>
+                    <option value="BANK_SERVER_UNAVAILABLE">BANK_SERVER_UNAVAILABLE</option>
+                    <option value="MANDATE_EXPIRED">MANDATE_EXPIRED</option>
+                    <option value="CARD_DECLINED">CARD_DECLINED</option>
+                    <option value="NONE" selected>NONE (Silent Churn)</option>
+                    <option value="USER_CANCELLED">USER_CANCELLED (Opt-Out)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400">Consecutive Failures</label>
+                  <input id="input-fails" type="number" value="1" class="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 pt-1">
+                <input id="input-optout" type="checkbox" class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                <label for="input-optout" class="text-xs text-slate-300 font-medium">User opted out of reminders (Compliance test)</label>
+              </div>
+            </div>
+
+            <button onclick="executeSingleRecovery()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 font-bold text-white shadow-lg shadow-blue-500/25 flex items-center justify-center space-x-2 transition">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Trigger AI Revenue Recovery Agent</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Real-Time Diagnostic & Action Output -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+                <i data-lucide="cpu" class="w-5 h-5 text-cyan-400"></i>
+                <span>Autonomous Agent Decision & Output</span>
+              </h3>
+              <span id="badge-status" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                Awaiting Execution
+              </span>
+            </div>
+
+            <!-- Decision Steps -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                <span class="text-slate-400 block mb-1">Diagnosed Root Cause</span>
+                <span id="output-root-cause" class="font-bold text-blue-400 text-sm">--</span>
+              </div>
+              <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                <span class="text-slate-400 block mb-1">Strategy & Discount</span>
+                <span id="output-strategy" class="font-bold text-purple-400 text-sm">--</span>
+              </div>
+              <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                <span class="text-slate-400 block mb-1">Final Amount (Paise/INR)</span>
+                <span id="output-amount" class="font-bold text-emerald-400 text-sm">--</span>
+              </div>
+            </div>
+
+            <!-- Guardrail Notes -->
+            <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-slate-300 flex items-center space-x-1.5">
+                  <i data-lucide="shield" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Deterministic Guardrail Check</span>
+                </span>
+                <span id="guardrail-badge" class="text-emerald-400">--</span>
+              </div>
+              <ul id="guardrail-notes-list" class="text-xs text-slate-400 space-y-1 list-disc list-inside">
+                <li>Awaiting agent execution...</li>
+              </ul>
+            </div>
+
+            <!-- Generated Dynamic Razorpay Link -->
+            <div id="razorpay-link-container" class="hidden p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-blue-300 flex items-center space-x-1.5">
+                  <i data-lucide="link" class="w-4 h-4 text-blue-400"></i>
+                  <span>Live Razorpay Dynamic Payment Link</span>
+                </span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">2-Day Expiry</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <input id="output-rzp-url" type="text" readonly value="" class="flex-1 bg-slate-950 border border-blue-500/30 rounded-lg p-2 text-xs text-cyan-300 font-mono">
+                <a id="btn-open-rzp-link" href="#" target="_blank" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center space-x-1">
+                  <span>Open Checkout</span>
+                  <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+
+            <!-- Generated Multilingual Contextual Message -->
+            <div class="space-y-2">
+              <span class="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                <i data-lucide="message-square" class="w-4 h-4 text-emerald-400"></i>
+                <span>Generated Multi-Channel Context Copy (Hinglish/WhatsApp)</span>
+              </span>
+              <div id="output-copy-box" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 font-sans leading-relaxed whitespace-pre-line">
+                Trigger a scenario on the left to inspect the personalized context copy generated by the AI engine.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 2: 100-Batch Benchmark Suite -->
+    <section id="tab-benchmark" class="hidden space-y-6">
+      <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-xl text-white flex items-center space-x-2">
+              <i data-lucide="gauge" class="w-6 h-6 text-purple-400"></i>
+              <span>100-Record Synthetic Evaluation Suite (The Bar)</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Runs the complete recovery agent against 100 diverse scenarios (Technical Bank Server Down, Disengaged Churners, Mandate Drops, VIPs, Opt-Outs).</p>
+          </div>
+          <button onclick="runBatchSimulation()" id="btn-run-benchmark" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold text-sm shadow-lg shadow-purple-500/25 flex items-center space-x-2 transition">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Execute 100-Case Benchmark</span>
+          </button>
+        </div>
+
+        <!-- Benchmark Charts & Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-6 bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-4">Recovery Rate: AI Agent vs Naive Baseline</h4>
+            <div class="h-64">
+              <canvas id="chartRecoveryRate"></canvas>
+            </div>
+          </div>
+          <div class="lg:col-span-6 bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-4">Financial Lift & Net ROI (INR)</h4>
+            <div class="h-64">
+              <canvas id="chartGmvLift"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detailed Benchmark Table -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Processed Scenarios (First 20 of 100)</h4>
+            <span class="text-xs text-slate-500">Real-time simulation results</span>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-800">
+                <tr>
+                  <th class="py-3 px-4">ID</th>
+                  <th class="py-3 px-4">Member</th>
+                  <th class="py-3 px-4">Plan Amount</th>
+                  <th class="py-3 px-4">Diagnosed Root Cause</th>
+                  <th class="py-3 px-4">Strategy</th>
+                  <th class="py-3 px-4">Discount</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Outcome</th>
+                </tr>
+              </thead>
+              <tbody id="benchmark-table-body" class="divide-y divide-slate-800/60">
+                <tr>
+                  <td colspan="8" class="text-center py-8 text-slate-500">Click "Execute 100-Case Benchmark" above to populate real-time evaluation data.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Audit Trail -->
+    <section id="tab-audit" class="hidden space-y-6">
+      <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+              <i data-lucide="shield-alert" class="w-5 h-5 text-blue-400"></i>
+              <span>Immutable SHA-256 Chained Audit Trail</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Every AI decision, policy verification, tool invocation, and Razorpay API payload is cryptographically hashed and logged.</p>
+          </div>
+          <button onclick="refreshAuditTrail()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Refresh Chain</span>
+          </button>
+        </div>
+
+        <div id="audit-log-container" class="space-y-3 font-mono text-xs max-h-[550px] overflow-y-auto pr-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Policy Guardrails -->
+    <section id="tab-policies" class="hidden space-y-6">
+      <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-6">
+        <div>
+          <h3 class="font-bold text-lg text-white flex items-center space-x-2">
+            <i data-lucide="sliders" class="w-5 h-5 text-cyan-400"></i>
+            <span>Merchant Policy & Financial Guardrails Configuration</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">Configure hard boundaries. The AI agent CANNOT exceed these limits under any circumstance.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-300">Max Retention Discount Percentage</label>
+              <span id="val-discount" class="text-xs font-bold text-blue-400">15.0%</span>
+            </div>
+            <input id="slider-discount" type="range" min="0" max="30" step="1" value="15" oninput="document.getElementById('val-discount').innerText = this.value + '.0%'" class="w-full accent-blue-500">
+            <p class="text-[11px] text-slate-500">Any LLM-suggested discount above this limit is automatically clamped by the deterministic policy engine.</p>
+          </div>
+
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-300">Max Recovery Touches Per Cycle</label>
+              <span id="val-touches" class="text-xs font-bold text-blue-400">3 touches</span>
+            </div>
+            <input id="slider-touches" type="range" min="1" max="5" step="1" value="3" oninput="document.getElementById('val-touches').innerText = this.value + ' touches'" class="w-full accent-blue-500">
+            <p class="text-[11px] text-slate-500">Prevents customer harassment by enforcing cooldown and hard stopping rules.</p>
+          </div>
+
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-300">VIP / Corporate Escalation Threshold (INR)</label>
+              <span id="val-vip" class="text-xs font-bold text-blue-400">₹50,000</span>
+            </div>
+            <input id="slider-vip" type="range" min="20000" max="100000" step="5000" value="50000" oninput="document.getElementById('val-vip').innerText = '₹' + Number(this.value).toLocaleString()" class="w-full accent-blue-500">
+            <p class="text-[11px] text-slate-500">Accounts above this GMV bypass automated bots and escalate directly to Gym General Manager.</p>
+          </div>
+
+          <div class="p-5 bg-slate-900/60 rounded-xl border border-slate-800 space-y-3">
+            <div class="flex items-center space-x-3">
+              <input id="toggle-optout" type="checkbox" checked class="w-4 h-4 rounded bg-slate-950 border-slate-700 text-blue-600 focus:ring-0">
+              <div>
+                <label for="toggle-optout" class="text-xs font-semibold text-slate-300 block">Strict Opt-Out & Compliance Stopping Rule</label>
+                <span class="text-[11px] text-slate-500">Immediately halts recovery if user replies "STOP" or cancels membership.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="savePolicies()" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-2 transition">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>Save & Apply Guardrail Boundaries</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-rzp-border py-6 text-center text-xs text-slate-500">
+    <p>Built for the <strong>Razorpay AI Buildathon 2026</strong> · Track 03: AI Revenue Recovery · GymOS Platform Integration</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
