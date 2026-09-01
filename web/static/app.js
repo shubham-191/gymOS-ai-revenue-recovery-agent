@@ -545,24 +545,26 @@ async function runSwarmWarRoom() {
   btn.innerHTML = `<span class="animate-spin inline-block mr-2">🔄</span> Swarm In Session...`;
   btn.disabled = true;
 
+  const isOptedOut = document.getElementById("swarm-optout-toggle")?.checked || document.getElementById("input-optout")?.checked || false;
+
   const member = {
     member_id: "mem_blr_4091",
-    name: document.getElementById("input-name").value || "Rahul Sharma",
-    phone: document.getElementById("input-phone").value || "+919876543210",
+    name: document.getElementById("input-name")?.value || "Rahul Sharma",
+    phone: document.getElementById("input-phone")?.value || "+919876543210",
     email: "rahul.sharma@example.com",
     language_preference: "hinglish",
-    membership_tier: document.getElementById("input-tier").value || "QUARTERLY_PRO",
-    membership_amount: parseFloat(document.getElementById("input-amount").value) || 6499.0,
+    membership_tier: document.getElementById("input-tier")?.value || "QUARTERLY_PRO",
+    membership_amount: parseFloat(document.getElementById("input-amount")?.value) || 6499.0,
     plan_start_date: "2026-06-01",
     plan_expiry_date: "2026-09-01",
     baseline_visits_per_week: 4.0,
-    actual_visits_last_30_days: 2,
-    days_since_last_checkin: 18,
+    actual_visits_last_30_days: parseInt(document.getElementById("input-visits")?.value) || 2,
+    days_since_last_checkin: parseInt(document.getElementById("input-days-inactive")?.value) || 18,
     lifetime_paid_inr: 15000.0,
     previous_payment_method: "UPI_AUTOPAY",
-    consecutive_failed_attempts: 1,
-    opted_out: false,
-    last_failure_code: "NONE"
+    consecutive_failed_attempts: parseInt(document.getElementById("input-fails")?.value) || 1,
+    opted_out: isOptedOut,
+    last_failure_code: document.getElementById("input-failure-code")?.value || "NONE"
   };
 
   try {
@@ -573,29 +575,72 @@ async function runSwarmWarRoom() {
     });
     const result = await res.json();
 
-    document.getElementById("swarm-status-badge").innerText = `Status: ${result.status} | Rail: ${result.gateway_rail || 'N/A'}`;
+    const isVetoed = result.status === "STOPPED_BY_AUDITOR";
+    const statusBadge = document.getElementById("swarm-status-badge");
+    statusBadge.innerText = `Status: ${result.status} ${isVetoed ? '🛑 (VETO TRIGGERED)' : '| Rail: ' + (result.gateway_rail || 'N/A')}`;
+    statusBadge.className = isVetoed ? "text-xs font-mono text-rose-400 font-bold" : "text-xs font-mono text-purple-400";
 
-    // Animate Nodes
-    const nodeKeys = ["sentinel", "forensic", "auditor", "negotiator", "settlement"];
-    nodeKeys.forEach(k => {
-      const nodeEl = document.getElementById(`node-${k}`);
-      const dotEl = document.getElementById(`dot-${k}`);
-      if (nodeEl && dotEl) {
-        nodeEl.className = "p-4 bg-slate-900 rounded-2xl border border-purple-500/50 space-y-2 relative shadow-lg shadow-purple-500/10";
-        dotEl.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
-      }
-    });
+    // Visual Node Updates
+    const executedStepRoles = (result.steps || []).map(s => s.agent_role);
+    
+    // Sentinel
+    const nodeSentinel = document.getElementById("node-sentinel");
+    const dotSentinel = document.getElementById("dot-sentinel");
+    nodeSentinel.className = "p-4 bg-slate-900 rounded-2xl border border-blue-500/50 space-y-2 relative shadow-lg shadow-blue-500/10";
+    dotSentinel.className = "w-2.5 h-2.5 rounded-full bg-blue-400";
+
+    // Forensic
+    const nodeForensic = document.getElementById("node-forensic");
+    const dotForensic = document.getElementById("dot-forensic");
+    nodeForensic.className = "p-4 bg-slate-900 rounded-2xl border border-purple-500/50 space-y-2 relative shadow-lg shadow-purple-500/10";
+    dotForensic.className = "w-2.5 h-2.5 rounded-full bg-purple-400";
+
+    // Auditor
+    const nodeAuditor = document.getElementById("node-auditor");
+    const dotAuditor = document.getElementById("dot-auditor");
+    if (isVetoed) {
+      nodeAuditor.className = "p-4 bg-rose-950/40 rounded-2xl border border-rose-500 space-y-2 relative shadow-xl shadow-rose-500/20";
+      dotAuditor.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+    } else {
+      nodeAuditor.className = "p-4 bg-slate-900 rounded-2xl border border-emerald-500/50 space-y-2 relative shadow-lg shadow-emerald-500/10";
+      dotAuditor.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+    }
+
+    // Negotiator & Settlement
+    const nodeNegotiator = document.getElementById("node-negotiator");
+    const dotNegotiator = document.getElementById("dot-negotiator");
+    const nodeSettlement = document.getElementById("node-settlement");
+    const dotSettlement = document.getElementById("dot-settlement");
+
+    if (isVetoed) {
+      // Deactivated when vetoed
+      nodeNegotiator.className = "p-4 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-2 relative opacity-30";
+      dotNegotiator.className = "w-2.5 h-2.5 rounded-full bg-slate-700";
+
+      nodeSettlement.className = "p-4 bg-slate-950/60 rounded-2xl border border-slate-800 space-y-2 relative opacity-30";
+      dotSettlement.className = "w-2.5 h-2.5 rounded-full bg-slate-700";
+    } else {
+      nodeNegotiator.className = "p-4 bg-slate-900 rounded-2xl border border-emerald-500/50 space-y-2 relative shadow-lg shadow-emerald-500/10";
+      dotNegotiator.className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+
+      nodeSettlement.className = "p-4 bg-slate-900 rounded-2xl border border-cyan-500/50 space-y-2 relative shadow-lg shadow-cyan-500/10";
+      dotSettlement.className = "w-2.5 h-2.5 rounded-full bg-cyan-400";
+    }
 
     // Populate Stream
     const feed = document.getElementById("swarm-feed-container");
     feed.innerHTML = "";
 
     (result.steps || []).forEach(step => {
+      const isStepVeto = step.status === "VETOED";
       const stepCard = document.createElement("div");
-      stepCard.className = "p-3.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5";
+      stepCard.className = `p-3.5 rounded-xl border space-y-1.5 ${isStepVeto ? 'bg-rose-950/30 border-rose-500/50' : 'bg-slate-900 border-slate-800'}`;
       stepCard.innerHTML = `
         <div class="flex items-center justify-between text-[11px]">
-          <span class="text-purple-400 font-bold">${step.agent_name} (${step.agent_role})</span>
+          <span class="${isStepVeto ? 'text-rose-400' : 'text-purple-400'} font-bold flex items-center space-x-1.5">
+            <span>${step.agent_name} (${step.agent_role})</span>
+            ${isStepVeto ? '<span class="px-2 py-0.2 rounded bg-rose-500/20 text-rose-300 font-mono text-[9px]">🛑 VETOED</span>' : '<span class="px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">✓ COMPLETED</span>'}
+          </span>
           <span class="text-slate-500">${step.timestamp}</span>
         </div>
         <div class="text-slate-200">${escapeHtml(step.reasoning_trace)}</div>
@@ -605,6 +650,13 @@ async function runSwarmWarRoom() {
       `;
       feed.appendChild(stepCard);
     });
+
+    if (isVetoed) {
+      const vetoNotice = document.createElement("div");
+      vetoNotice.className = "p-3 bg-rose-950/60 border border-rose-500/40 rounded-xl text-xs text-rose-300 font-sans";
+      vetoNotice.innerHTML = `🛑 <strong>Auditor Agent Veto Enforced:</strong> Compliance rules triggered (Opt-out detected). Execution halted at step 3. Negotiator & Settlement agents disabled to prevent unauthorized contact.`;
+      feed.appendChild(vetoNotice);
+    }
 
     if (window.lucide) {
       lucide.createIcons();

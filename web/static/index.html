@@ -617,7 +617,7 @@
     <!-- TAB: Multi-Agent War Room Swarm Visualizer -->
     <section id="tab-swarm" class="hidden space-y-6">
       <div class="bg-rzp-card p-6 rounded-2xl border border-rzp-border space-y-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
             <h3 class="font-bold text-xl text-white flex items-center space-x-2">
               <i data-lucide="bot" class="w-6 h-6 text-purple-400"></i>
@@ -625,10 +625,16 @@
             </h3>
             <p class="text-xs text-slate-400 mt-1">Watch 5 specialized autonomous sub-agents collaborate, audit, and negotiate in real time with zero single-point-of-failure.</p>
           </div>
-          <button onclick="runSwarmWarRoom()" id="btn-run-swarm" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center space-x-2 transition">
-            <i data-lucide="sparkles" class="w-4 h-4"></i>
-            <span>Execute 5-Agent War Room</span>
-          </button>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center space-x-2 px-3 py-2 bg-slate-900 rounded-xl border border-slate-700 cursor-pointer">
+              <input id="swarm-optout-toggle" type="checkbox" onchange="document.getElementById('input-optout').checked = this.checked" class="rounded bg-slate-950 border-slate-600 text-rose-500 focus:ring-0">
+              <span class="text-xs font-semibold text-rose-300">Simulate Opt-Out (Test VETO)</span>
+            </label>
+            <button onclick="runSwarmWarRoom()" id="btn-run-swarm" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold text-xs shadow-lg shadow-purple-500/25 flex items-center space-x-2 transition">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span>Execute 5-Agent War Room</span>
+            </button>
+          </div>
         </div>
 
         <!-- 5-Agent Visual Node Cards -->
