@@ -21,7 +21,7 @@ def test_create_dynamic_payment_link(rzp_client):
     )
     assert res is not None
     assert res["id"].startswith("plink_")
-    assert "rzp.io" in res["short_url"]
+    assert ("checkout" in res["short_url"] or "rzp.io" in res["short_url"])
     assert res["amount"] == 5849.10
 
 

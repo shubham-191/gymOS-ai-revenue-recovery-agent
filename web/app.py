@@ -78,6 +78,14 @@ async def serve_index():
     return HTMLResponse("<h1>GymOS AI Revenue Recovery Engine</h1><p>Static UI not yet built.</p>")
 
 
+@app.get("/checkout", response_class=HTMLResponse)
+async def serve_checkout():
+    checkout_file = STATIC_DIR / "checkout.html"
+    if checkout_file.exists():
+        return FileResponse(checkout_file)
+    return HTMLResponse("<h1>Razorpay Checkout</h1><p>Checkout page not found.</p>")
+
+
 @app.get("/api/health")
 async def health():
     return {
