@@ -636,7 +636,8 @@ async function loadOptimizerRails() {
       const badgeColor = isHealthy ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" : "bg-rose-500/10 text-rose-400 border-rose-500/30";
 
       const card = document.createElement("div");
-      card.className = "p-5 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 relative";
+      card.id = `card-${rail.rail_id}`;
+      card.className = "p-5 bg-slate-900 rounded-2xl border border-slate-800 space-y-3 relative transition-all duration-300";
       card.innerHTML = `
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Priority ${rail.priority}</span>
@@ -657,6 +658,10 @@ async function loadOptimizerRails() {
           <div class="flex justify-between text-slate-400 pt-1">
             <span>Avg Latency</span>
             <span class="font-mono text-cyan-300">${rail.average_latency_ms}ms</span>
+          </div>
+          <div class="flex justify-between text-slate-400 pt-0.5 text-[10px]">
+            <span>Routed GMV</span>
+            <span class="font-mono text-slate-300 font-bold">₹${(rail.total_routed_volume_inr || 0).toLocaleString()}</span>
           </div>
         </div>
         <div class="pt-2 border-t border-slate-800/80">
@@ -713,29 +718,69 @@ async function restoreAllRails() {
 }
 
 async function testRouteTransaction() {
+  const btn = document.getElementById("btn-route-optimizer");
+  if (btn) {
+    btn.innerHTML = `<span class="animate-spin inline-block mr-2">⚡</span> Routing via Optimizer...`;
+    btn.disabled = true;
+  }
+
+  const amtSelect = document.getElementById("optimizer-test-amount");
+  const testAmt = amtSelect ? parseFloat(amtSelect.value) : 6499.0;
+
   try {
     const res = await fetch("/api/optimizer/route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount_inr: 6499.0 })
+      body: JSON.stringify({ amount_inr: testAmt })
     });
     const result = await res.json();
+
+    // Reload rails to show updated Routed GMV volume
+    await loadOptimizerRails();
+
+    // Highlight selected rail card
+    const allRailIds = ["rail_hdfc", "rail_icici", "rail_axis", "rail_dynamic_qr"];
+    allRailIds.forEach(id => {
+      const c = document.getElementById(`card-${id}`);
+      if (c) c.classList.remove("ring-2", "ring-cyan-400", "shadow-xl", "shadow-cyan-500/20");
+    });
+    const activeCard = document.getElementById(`card-${result.selected_rail_id}`);
+    if (activeCard) {
+      activeCard.classList.add("ring-2", "ring-cyan-400", "shadow-xl", "shadow-cyan-500/20");
+    }
+
+    const txId = "txn_opt_" + Math.random().toString(36).substring(2, 9);
+    const nowTime = new Date().toLocaleTimeString();
 
     const box = document.getElementById("optimizer-route-result");
     box.classList.remove("hidden");
     box.innerHTML = `
-      <div class="flex items-center justify-between font-bold">
-        <span class="text-emerald-400">⚡ Dynamic Routing Decision Completed</span>
-        <span class="text-slate-400">${result.failover_triggered ? '⚠️ FAILOVER ACTIVATED' : '✓ DIRECT ROUTED'}</span>
+      <div class="flex items-center justify-between font-bold pb-1 border-b border-slate-800">
+        <span class="text-emerald-400 flex items-center space-x-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Routing Execution Live</span>
+        </span>
+        <span class="px-2.5 py-0.5 rounded text-[10px] ${result.failover_triggered ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'}">
+          ${result.failover_triggered ? '⚠️ DYNAMIC FAILOVER ACTIVE' : '✓ PRIMARY DIRECT ROUTED'}
+        </span>
       </div>
-      <div class="space-y-1 text-slate-300">
-        <div>• Selected Gateway: <strong class="text-white">${result.gateway_name}</strong> (${result.protocol_used})</div>
-        <div>• Latency / Health: <span class="text-cyan-300">${result.expected_latency_ms}ms</span> | <span class="text-emerald-400">${result.gateway_success_rate}% Success</span></div>
-        <div>• Routing Reason: <span class="text-purple-300">${result.routing_reason}</span></div>
+      <div class="space-y-1 text-slate-300 pt-1">
+        <div>• <strong>Transaction ID:</strong> <span class="font-mono text-cyan-300">${txId}</span> (₹${testAmt.toLocaleString()} at ${nowTime})</div>
+        <div>• <strong>Active Gateway:</strong> <span class="text-white font-bold">${result.gateway_name}</span> (${result.protocol_used})</div>
+        <div>• <strong>Network Performance:</strong> <span class="text-cyan-300">${result.expected_latency_ms}ms latency</span> | <span class="text-emerald-400 font-bold">${result.gateway_success_rate}% Success Rate</span></div>
+        <div>• <strong>Routing Policy:</strong> <span class="text-purple-300">${result.routing_reason}</span></div>
       </div>
     `;
   } catch (err) {
     alert("Routing test failed: " + err.message);
+  } finally {
+    if (btn) {
+      btn.innerHTML = `<i data-lucide="send" class="w-4 h-4 mr-2"></i><span>Dispatch & Route Transaction Through Live Optimizer</span>`;
+      btn.disabled = false;
+    }
+    if (window.lucide) {
+      lucide.createIcons();
+    }
   }
 }
 
