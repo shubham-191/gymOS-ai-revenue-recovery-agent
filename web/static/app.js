@@ -113,8 +113,10 @@ async function executeSingleRecovery() {
     const result = await res.json();
 
     // Render Outputs
-    document.getElementById("output-root-cause").innerText = result.root_cause;
-    document.getElementById("output-strategy").innerText = `${result.strategy_applied} (${result.discount_percentage}% off)`;
+    const formattedRootCause = (result.root_cause || "--").replace(/_/g, " ");
+    const formattedStrategy = (result.strategy_applied || "--").replace(/_/g, " ");
+    document.getElementById("output-root-cause").innerText = formattedRootCause;
+    document.getElementById("output-strategy").innerText = `${formattedStrategy} (${result.discount_percentage}% off)`;
     document.getElementById("output-amount").innerText = `₹${result.discounted_amount.toLocaleString()}`;
 
     // Badge status
