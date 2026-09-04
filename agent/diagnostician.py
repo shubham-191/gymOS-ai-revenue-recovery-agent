@@ -53,6 +53,7 @@ Consecutive Fails: {member.consecutive_failed_attempts}
 Opted Out: {member.opted_out}
 
 Categorize into exactly one of: [TECHNICAL_BANKING_FAILURE, INSUFFICIENT_FUNDS_TIMING, SILENT_CHURN_DISENGAGEMENT, CARD_MANDATE_EXPIRED, AFFORDABILITY_PRICE_SENSITIVE, HIGH_VALUE_VIP_RISK].
+Domain Rule: If member's mandate expired or card declined, but they haven't visited in >10 days or have very low 30-day visits (<4), classify as SILENT_CHURN_DISENGAGEMENT because they are likely letting autopay lapse to quit/churn.
 Respond in JSON format with keys: "root_cause", "confidence" (0.0 to 1.0), "reasoning", "signals_matched" (list of strings)."""
 
             res = requests.post(
@@ -90,7 +91,7 @@ Output JSON format: {{"root_cause": "...", "confidence": 0.9, "reasoning": "..."
         return None
 
     def _heuristic_diagnose(self, member: MemberProfile) -> Dict[str, Any]:
-        # VIP / Corporate High-Value Check
+        # Step 1: VIP / Corporate High-Value Check
         if member.membership_amount >= 50000.0:
             return {
                 "root_cause": RootCauseCategory.HIGH_VALUE_VIP_RISK,
@@ -99,7 +100,41 @@ Output JSON format: {{"root_cause": "...", "confidence": 0.9, "reasoning": "..."
                 "signals_matched": ["high_gmv_threshold", "tier_" + member.membership_tier.value]
             }
 
-        # Check for technical bank rail errors
+        # Step 2: Physical Disengagement & Silent Churn Velocity Analysis
+        # If member has been inactive for many days or has very low recent attendance,
+        # they are at critical risk of silent churn/quitting (even if the technical signal was mandate expiry/card decline).
+        attendance_drop_ratio = 0.0
+        if member.baseline_visits_per_week > 0:
+            expected_monthly = member.baseline_visits_per_week * 4
+            attendance_drop_ratio = max(0.0, 1.0 - (member.actual_visits_last_30_days / expected_monthly))
+
+        is_disengaged = (
+            member.days_since_last_checkin >= 12
+            or attendance_drop_ratio >= 0.65
+            or (member.actual_visits_last_30_days <= 3 and member.days_since_last_checkin >= 7)
+        )
+
+        if is_disengaged:
+            mandate_context = ""
+            if member.last_failure_code in [FailureReasonCode.MANDATE_EXPIRED, FailureReasonCode.CARD_DECLINED]:
+                mandate_context = f" Mandate expired/card declined ({member.last_failure_code.value}), suggesting member may be passively letting autopay lapse to quit."
+
+            return {
+                "root_cause": RootCauseCategory.SILENT_CHURN_DISENGAGEMENT,
+                "confidence": 0.93 if mandate_context else 0.89,
+                "reasoning": (
+                    f"Member attendance dropped by {attendance_drop_ratio*100:.1f}% "
+                    f"(last visit was {member.days_since_last_checkin} days ago, only {member.actual_visits_last_30_days} visits in 30d)."
+                    f"{mandate_context} Disengagement is the primary churn driver; winback reactivation discount and link recommended."
+                ),
+                "signals_matched": [
+                    f"days_inactive_{member.days_since_last_checkin}",
+                    f"actual_visits_{member.actual_visits_last_30_days}",
+                    f"attendance_drop_{attendance_drop_ratio:.2f}"
+                ] + ([f"lapsed_mandate_{member.last_failure_code.value}"] if mandate_context else [])
+            }
+
+        # Step 3: Technical Bank Rail Outages (for active members)
         if member.last_failure_code in [FailureReasonCode.BANK_SERVER_UNAVAILABLE, FailureReasonCode.PAYMENT_TIMED_OUT]:
             return {
                 "root_cause": RootCauseCategory.TECHNICAL_BANKING_FAILURE,
@@ -108,30 +143,16 @@ Output JSON format: {{"root_cause": "...", "confidence": 0.9, "reasoning": "..."
                 "signals_matched": ["failure_code_" + member.last_failure_code.value, "recent_active_attendance"]
             }
 
-        # Check for expired mandate / card decline
+        # Step 4: Active Member Expired Mandate / Card Replaced
         if member.last_failure_code in [FailureReasonCode.MANDATE_EXPIRED, FailureReasonCode.CARD_DECLINED]:
             return {
                 "root_cause": RootCauseCategory.CARD_MANDATE_EXPIRED,
                 "confidence": 0.92,
-                "reasoning": "Recurring mandate token expired or card was replaced. Member needs an instant one-click Razorpay payment link to renew mandate.",
-                "signals_matched": ["mandate_invalidation", "recurring_autopay_method"]
+                "reasoning": f"Recurring mandate token expired or card was replaced. Member is actively attending ({member.actual_visits_last_30_days} visits in 30d, last check-in {member.days_since_last_checkin}d ago); seamless 1-click Razorpay payment link dispatched without unneeded discounts.",
+                "signals_matched": ["mandate_invalidation", "active_attendance", "recurring_autopay_method"]
             }
 
-        # Check for disengagement & silent churn (Attendance dropped significantly)
-        attendance_drop_ratio = 0.0
-        if member.baseline_visits_per_week > 0:
-            expected_monthly = member.baseline_visits_per_week * 4
-            attendance_drop_ratio = max(0.0, 1.0 - (member.actual_visits_last_30_days / expected_monthly))
-
-        if member.days_since_last_checkin >= 12 or attendance_drop_ratio >= 0.65:
-            return {
-                "root_cause": RootCauseCategory.SILENT_CHURN_DISENGAGEMENT,
-                "confidence": 0.89,
-                "reasoning": f"Member attendance dropped by {attendance_drop_ratio*100:.1f}% (last visit was {member.days_since_last_checkin} days ago). Disengagement is the primary churn driver.",
-                "signals_matched": [f"days_inactive_{member.days_since_last_checkin}", f"attendance_drop_{attendance_drop_ratio:.2f}"]
-            }
-
-        # Check for insufficient balance / salary timing
+        # Step 5: Insufficient Funds / Salary Timing
         if member.last_failure_code == FailureReasonCode.INSUFFICIENT_FUNDS:
             return {
                 "root_cause": RootCauseCategory.INSUFFICIENT_FUNDS_TIMING,
@@ -140,7 +161,7 @@ Output JSON format: {{"root_cause": "...", "confidence": 0.9, "reasoning": "..."
                 "signals_matched": ["insufficient_funds_code", "active_attendance_history"]
             }
 
-        # Default / Affordability sensitivity
+        # Step 6: Default / Price Sensitivity
         return {
             "root_cause": RootCauseCategory.AFFORDABILITY_PRICE_SENSITIVE,
             "confidence": 0.75,

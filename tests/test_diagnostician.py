@@ -68,3 +68,50 @@ def test_diagnose_vip_escalation(diagnostician):
     res = diagnostician.diagnose(member)
     assert res["root_cause"] == RootCauseCategory.HIGH_VALUE_VIP_RISK
     assert res["confidence"] >= 0.95
+
+
+def test_diagnose_disengaged_member_with_expired_mandate_classified_as_silent_churn(diagnostician):
+    # Member mandate expired, but member hasn't visited in 20 days and had only 1 workout (planning to quit!)
+    member = MemberProfile(
+        member_id="mem_disengaged_mandate",
+        name="Rajesh Khanna",
+        phone="+919876543212",
+        email="rajesh@example.com",
+        membership_tier=MembershipTier.QUARTERLY_PRO,
+        membership_amount=5849.0,
+        plan_start_date="2026-06-01",
+        plan_expiry_date="2026-09-01",
+        baseline_visits_per_week=4.0,
+        actual_visits_last_30_days=1,
+        days_since_last_checkin=20,
+        last_failure_code=FailureReasonCode.MANDATE_EXPIRED
+    )
+    res = diagnostician.diagnose(member)
+    # Should diagnose as SILENT_CHURN_DISENGAGEMENT to trigger retention incentive!
+    assert res["root_cause"] == RootCauseCategory.SILENT_CHURN_DISENGAGEMENT
+    assert res["confidence"] >= 0.90
+    assert "Disengagement is the primary churn driver" in res["reasoning"]
+
+
+def test_diagnose_active_member_with_expired_mandate_classified_as_card_mandate_expired(diagnostician):
+    # Member mandate expired, but member is active athlete (14 workouts in 30d, visited 2 days ago)
+    member = MemberProfile(
+        member_id="mem_active_mandate",
+        name="Karan Malhotra",
+        phone="+919876543213",
+        email="karan@example.com",
+        membership_tier=MembershipTier.QUARTERLY_PRO,
+        membership_amount=5849.0,
+        plan_start_date="2026-06-01",
+        plan_expiry_date="2026-09-01",
+        baseline_visits_per_week=4.0,
+        actual_visits_last_30_days=14,
+        days_since_last_checkin=2,
+        last_failure_code=FailureReasonCode.MANDATE_EXPIRED
+    )
+    res = diagnostician.diagnose(member)
+    # Active members get seamless link without unneeded margin discount
+    assert res["root_cause"] == RootCauseCategory.CARD_MANDATE_EXPIRED
+    assert res["confidence"] >= 0.90
+    assert "actively attending" in res["reasoning"]
+
