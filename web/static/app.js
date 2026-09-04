@@ -18,6 +18,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       syncWhatsAppMockup(e.target.value, document.getElementById("input-tier")?.value, document.getElementById("input-amount")?.value);
     });
   }
+
+  const chatMemberSel = document.getElementById("chat-member-selector");
+  if (chatMemberSel) {
+    chatMemberSel.addEventListener("change", (e) => {
+      onChatMemberChange(e.target.value);
+    });
+  }
+
+  const resetBtn = document.getElementById("btn-reset-chat");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      resetWhatsAppConversation();
+    });
+  }
 });
 
 function switchTab(tabId) {
