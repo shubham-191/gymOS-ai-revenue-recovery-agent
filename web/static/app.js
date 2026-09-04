@@ -772,18 +772,30 @@ async function runSwarmWarRoom() {
     (result.steps || []).forEach(step => {
       const isStepVeto = step.status === "VETOED";
       const stepCard = document.createElement("div");
-      stepCard.className = `p-3.5 rounded-xl border space-y-1.5 ${isStepVeto ? 'bg-rose-950/30 border-rose-500/50' : 'bg-slate-900 border-slate-800'}`;
+      stepCard.className = `p-4 rounded-xl border space-y-2 ${isStepVeto ? 'bg-rose-950/30 border-rose-500/50' : 'bg-slate-900/90 border-slate-800'}`;
+      
+      const rolePretty = (step.agent_role || "").replace(/_/g, " ");
+      const formattedJson = JSON.stringify(step.output_produced || {}, null, 2);
+
       stepCard.innerHTML = `
-        <div class="flex items-center justify-between text-[11px]">
-          <span class="${isStepVeto ? 'text-rose-400' : 'text-purple-400'} font-bold flex items-center space-x-1.5">
-            <span>${step.agent_name} (${step.agent_role})</span>
-            ${isStepVeto ? '<span class="px-2 py-0.2 rounded bg-rose-500/20 text-rose-300 font-mono text-[9px]">🛑 VETOED</span>' : '<span class="px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">✓ COMPLETED</span>'}
-          </span>
-          <span class="text-slate-400 font-mono text-[10px]">${formatIST(step.timestamp)}</span>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-1 border-b border-slate-800/60">
+          <div class="flex items-center gap-2 flex-wrap min-w-0">
+            <span class="px-2 py-0.5 rounded ${isStepVeto ? 'bg-rose-500/20 text-rose-300' : 'bg-purple-500/20 text-purple-300'} font-bold text-[10px] font-mono shrink-0">
+              ${step.agent_name}
+            </span>
+            <span class="text-[11px] font-semibold ${isStepVeto ? 'text-rose-300' : 'text-slate-200'}">
+              ${rolePretty}
+            </span>
+            ${isStepVeto ? '<span class="px-1.5 py-0.2 rounded bg-rose-500/30 text-rose-300 font-mono text-[9px] shrink-0">🛑 VETOED</span>' : '<span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[9px] shrink-0">✓ COMPLETED</span>'}
+          </div>
+          <span class="text-slate-400 font-mono text-[10px] shrink-0 whitespace-nowrap">${formatIST(step.timestamp)}</span>
         </div>
-        <div class="text-slate-200">${escapeHtml(step.reasoning_trace)}</div>
-        <div class="text-[10px] text-cyan-400 font-mono bg-slate-950 p-2 rounded-lg mt-1 border border-slate-900">
-          Output: ${JSON.stringify(step.output_produced)}
+        <div class="text-xs text-slate-200 font-sans leading-relaxed break-words">
+          ${escapeHtml(step.reasoning_trace)}
+        </div>
+        <div class="text-[10px] font-mono text-cyan-300 bg-[#060a12] p-2.5 rounded-lg mt-1 border border-slate-800/80 overflow-x-auto whitespace-pre-wrap break-all max-h-[160px] overflow-y-auto">
+          <div class="text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-1">Payload Output:</div>
+          ${escapeHtml(formattedJson)}
         </div>
       `;
       feed.appendChild(stepCard);
