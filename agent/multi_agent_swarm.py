@@ -9,7 +9,7 @@ Executes an event-driven collaborative agent loop with 5 specialized sub-agents:
 """
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 import logging
@@ -23,6 +23,8 @@ from razorpay_client.client import RazorpayRecoveryClient
 from razorpay_client.smart_optimizer import SmartPaymentRouter
 
 logger = logging.getLogger(__name__)
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class AgentRole(str):
@@ -87,7 +89,7 @@ class MultiAgentWarRoomCoordinator:
             agent_name="Agent Sentinel-01",
             agent_role=AgentRole.SENTINEL,
             status="COMPLETED",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
             input_received={"trigger_event": trigger_event, "member_id": member.member_id},
             output_produced=sentinel_output,
             reasoning_trace=f"Ingested physical check-in telemetry: Member attended {member.actual_visits_last_30_days} sessions in 30 days ({attendance_drop_pct}% drop velocity). Payment status: {member.last_failure_code.value}."
@@ -104,7 +106,7 @@ class MultiAgentWarRoomCoordinator:
             agent_name="Agent Forensic-02",
             agent_role=AgentRole.FORENSIC,
             status="COMPLETED",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
             input_received=sentinel_output,
             output_produced=diag_res,
             reasoning_trace=diag_res["reasoning"]
@@ -135,7 +137,7 @@ class MultiAgentWarRoomCoordinator:
             agent_name="Agent Auditor-03",
             agent_role=AgentRole.AUDITOR,
             status="VETOED" if not is_allowed else "AUTHORIZED",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
             input_received={"proposed_discount": proposed_discount, "opted_out": member.opted_out},
             output_produced=auditor_output,
             reasoning_trace=f"Auditor evaluated policy rules. Verdict: {verdict}. Authorized discount: {authorized_discount}%. Violations: {0 if is_allowed else 1}."
@@ -168,7 +170,7 @@ class MultiAgentWarRoomCoordinator:
             agent_name="Agent Negotiator-04",
             agent_role=AgentRole.NEGOTIATOR,
             status="COMPLETED",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
             input_received={"authorized_discount": authorized_discount, "language": member.language_preference},
             output_produced={"final_amount_inr": discounted_amount, "copy_preview": negotiator_copy[:120] + "..."},
             reasoning_trace=f"Synthesized empathetic {member.language_preference} copy tailored to {root_cause} with authorized {authorized_discount}% discount."
@@ -210,7 +212,7 @@ class MultiAgentWarRoomCoordinator:
             agent_name="Agent Settlement-05",
             agent_role=AgentRole.SETTLEMENT,
             status="DISPATCHED_AND_LOGGED",
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST"),
             input_received={"amount": discounted_amount, "routing": routing_decision},
             output_produced={
                 "razorpay_payment_link": final_link,

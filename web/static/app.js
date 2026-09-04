@@ -419,8 +419,8 @@ async function refreshAuditTrail() {
       card.className = "p-3.5 bg-slate-900 rounded-xl border border-slate-800 space-y-1.5";
       card.innerHTML = `
         <div class="flex items-center justify-between text-[11px] text-slate-400">
-          <span class="text-blue-400 font-bold">SHA-256: ${entry.entry_hash.slice(0, 16)}...</span>
-          <span>${entry.timestamp}</span>
+          <span class="text-blue-400 font-bold font-mono">SHA-256: ${entry.entry_hash.slice(0, 16)}...</span>
+          <span class="font-mono text-[10px] text-slate-400 font-semibold">${formatIST(entry.timestamp)}</span>
         </div>
         <div class="text-xs text-slate-200">
           <span class="text-purple-400 font-semibold">[${entry.member_id}]</span> Trigger: <span class="text-cyan-300">${entry.trigger_signal}</span> | Verdict: <span class="text-emerald-400 font-bold">${entry.guardrail_verdict}</span> | Status: <span class="text-slate-300 font-bold">${entry.outcome_status}</span>
@@ -556,7 +556,7 @@ async function sendChatMessage() {
         </div>
         <p class="whitespace-pre-line">${escapeHtml(result.reply_message)}</p>
         ${linkBlock}
-        <div class="text-[10px] text-slate-400 text-right">Just now · ✓✓</div>
+        <div class="text-[10px] text-slate-400 text-right font-mono">${formatIST(new Date())} · ✓✓</div>
       </div>
     `;
     container.appendChild(aiBubble);
@@ -567,6 +567,29 @@ async function sendChatMessage() {
   } catch (err) {
     typingIndicator.remove();
     console.error("Chat response error", err);
+  }
+}
+
+function formatIST(isoOrDateStr) {
+  if (!isoOrDateStr) return "";
+  if (typeof isoOrDateStr === "string" && isoOrDateStr.includes("IST")) {
+    return isoOrDateStr;
+  }
+  try {
+    const d = new Date(isoOrDateStr);
+    if (isNaN(d.getTime())) return String(isoOrDateStr);
+    return d.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true
+    }) + " IST";
+  } catch (e) {
+    return String(isoOrDateStr);
   }
 }
 
@@ -756,7 +779,7 @@ async function runSwarmWarRoom() {
             <span>${step.agent_name} (${step.agent_role})</span>
             ${isStepVeto ? '<span class="px-2 py-0.2 rounded bg-rose-500/20 text-rose-300 font-mono text-[9px]">🛑 VETOED</span>' : '<span class="px-2 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px]">✓ COMPLETED</span>'}
           </span>
-          <span class="text-slate-500">${step.timestamp}</span>
+          <span class="text-slate-400 font-mono text-[10px]">${formatIST(step.timestamp)}</span>
         </div>
         <div class="text-slate-200">${escapeHtml(step.reasoning_trace)}</div>
         <div class="text-[10px] text-cyan-400 font-mono bg-slate-950 p-2 rounded-lg mt-1 border border-slate-900">

@@ -6,12 +6,14 @@ import hashlib
 import json
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class AuditLogger:
@@ -63,7 +65,7 @@ class AuditLogger:
             except Exception:
                 pass
 
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        timestamp = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")
         
         entry_payload = {
             "timestamp": timestamp,

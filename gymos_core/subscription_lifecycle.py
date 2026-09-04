@@ -3,13 +3,15 @@ GymOS Subscription Lifecycle & Plan Elasticity Engine.
 Manages flexible alternatives to churn: Pause/Freeze, Plan Downgrades,
 and Promise-to-Pay deferrals.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 from enum import Enum
 from pydantic import BaseModel
 import logging
 
 logger = logging.getLogger(__name__)
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class LifecycleActionType(str, Enum):
@@ -23,7 +25,7 @@ class LifecycleActionType(str, Enum):
 class SubscriptionLifecycleManager:
     @staticmethod
     def execute_freeze(member_id: str, freeze_days: int = 30) -> Dict[str, Any]:
-        resume_date = (datetime.utcnow() + timedelta(days=freeze_days)).strftime("%Y-%m-%d")
+        resume_date = (datetime.now(IST) + timedelta(days=freeze_days)).strftime("%Y-%m-%d")
         logger.info("Executed subscription freeze for %s until %s", member_id, resume_date)
         return {
             "action": LifecycleActionType.FREEZE_MEMBERSHIP,

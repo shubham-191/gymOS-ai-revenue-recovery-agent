@@ -3,7 +3,7 @@ Central Action Orchestration Engine for AI Revenue Recovery.
 Executes the closed loop: Ingest -> Diagnose -> Guardrail Verification -> Razorpay Action -> Audit.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 import logging
 
@@ -15,6 +15,8 @@ from agent.audit_logger import AuditLogger
 from razorpay_client.client import RazorpayRecoveryClient
 
 logger = logging.getLogger(__name__)
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class RecoveryOrchestrator:
@@ -38,7 +40,7 @@ class RecoveryOrchestrator:
         Executes end-to-end bounded revenue recovery workflow for a member.
         """
         intervention_id = f"intv_{uuid.uuid4().hex[:10]}"
-        timestamp = datetime.utcnow().isoformat() + "Z"
+        timestamp = datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")
 
         # Step 1: Diagnose Root Cause
         diag = self.diagnostician.diagnose(member)
