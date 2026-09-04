@@ -122,6 +122,7 @@ async def run_batch_simulation(payload: Optional[Dict[str, Any]] = None):
 
 
 @app.get("/api/audit-trail")
+@app.get("/api/audit/trail")
 async def get_audit_trail(limit: int = 30):
     entries = audit_logger.get_recent_entries(limit=limit)
     is_valid = audit_logger.verify_integrity()
