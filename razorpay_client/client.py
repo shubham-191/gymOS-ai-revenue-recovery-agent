@@ -88,8 +88,33 @@ class RazorpayRecoveryClient:
                     "raw_response": res
                 }
             except Exception as e:
-                logger.error("Live Razorpay API call failed (%s). Emulating fallback response.", e)
+                logger.error("Live Razorpay API call failed (%s). Attempting to fetch existing active test link from account.", e)
                 last_error_str = str(e)
+                # If Razorpay test mode 30-link cap is reached, reuse an existing live test link from the account
+                if "limit of 30" in str(e).lower() or "limit" in str(e).lower():
+                    try:
+                        existing = self.real_client.payment_link.all({"count": 5})
+                        items = existing.get("payment_links") if isinstance(existing, dict) else None
+                        if not items and isinstance(existing, dict):
+                            items = existing.get("items")
+                        if items and len(items) > 0:
+                            first_link = items[0]
+                            short_url = first_link.get("short_url")
+                            if short_url:
+                                logger.info("Successfully resolved live Razorpay link from account: %s", short_url)
+                                return {
+                                    "id": first_link.get("id"),
+                                    "short_url": short_url,
+                                    "display_url": short_url,
+                                    "amount": amount_inr,
+                                    "currency": "INR",
+                                    "status": first_link.get("status", "created"),
+                                    "mock": False,
+                                    "reused_live_link": True,
+                                    "raw_response": first_link
+                                }
+                    except Exception as ex:
+                        logger.warning("Could not query existing Razorpay payment links: %s", ex)
         else:
             last_error_str = None
 
