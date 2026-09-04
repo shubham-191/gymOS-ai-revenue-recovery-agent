@@ -155,8 +155,8 @@ function resetWhatsAppConversation() {
     <!-- Initial AI Recovery Outreach Message -->
     <div class="flex justify-start">
       <div class="bg-[#202c33] text-slate-200 p-3.5 rounded-2xl rounded-tl-none max-w-md shadow-md space-y-2">
-        <p id="chat-initial-greeting">Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!</p>
-        <p>Aapke active return ke liye humne exclusive renewal link ready kiya hai:</p>
+        <p id="chat-initial-greeting">Hi ${firstName}! 👋 We miss seeing you at IronPeak Gym. Your fitness journey matters to us!</p>
+        <p>Here is your secure 1-click renewal link to continue your workouts:</p>
         <div class="mt-2 p-3 bg-[#111b21] rounded-xl border border-blue-500/30 text-slate-200 shadow-lg space-y-2">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
@@ -189,7 +189,7 @@ function syncWhatsAppMockup(name, tier, amount) {
   
   const greetEl = document.getElementById("chat-initial-greeting");
   if (greetEl) {
-    greetEl.innerText = `Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!`;
+    greetEl.innerText = `Hi ${firstName}! 👋 We miss seeing you at IronPeak Gym. Your fitness journey matters to us!`;
   }
   const linkTextEl = document.getElementById("chat-initial-link-text");
   if (linkTextEl) {
