@@ -19,7 +19,7 @@
 | **5. Dynamic Two-Way WhatsApp Negotiation** | Real-time state machine parsing natural language durations (e.g., 3 weeks $\rightarrow$ 21 days), salary delays, downgrades, and continuous billing cycle anchoring. | [`agent/conversational_agent.py`](agent/conversational_agent.py)<br>[`gymos_core/subscription_lifecycle.py`](gymos_core/subscription_lifecycle.py) |
 | **6. Smart Gateway Routing & Outage Failover** | Real-time gateway health monitoring (HDFC, ICICI, Axis, SBI) with automated rerouting away from degraded banks. | [`razorpay_client/smart_optimizer.py`](razorpay_client/smart_optimizer.py)<br>[`tests/test_smart_optimizer.py`](tests/test_smart_optimizer.py) |
 | **7. B2B Corporate Wellness Invoice Dunning** | 4-Stage escalating aging dunning for corporate gym accounts from gentle payment links to automated turnstile access lock. | [`agent/b2b_dunning.py`](agent/b2b_dunning.py)<br>[`tests/test_b2b_dunning.py`](tests/test_b2b_dunning.py) |
-| **8. Automated Test Coverage** | 22/22 unit & integration tests passing in <1s. | [`tests/`](tests/) |
+| **8. Automated Test Coverage** | 25/25 unit & integration tests passing in <1s. | [`tests/`](tests/) |
 
 ---
 
@@ -99,14 +99,14 @@ Audit Trail Verification:            PASSED (Cryptographic Hash Chain Intact)
 ### **[4:15 - 5:00] Act 5: Security, Audit Trail & Why GymOS Wins**
 * **Visual**: Open **Audit Trail Tab**, inspect SHA-256 hash chain and JSON payload inspector.
 * **Speaker Script**:
-  > *"For CFOs and compliance teams, every decision is cryptographically signed with SHA-256 chaining in IST. All 22 automated tests pass in under 1 second. GymOS transforms revenue recovery from a dumb retry loop into an intelligent, autonomous financial engine on Razorpay Rails. Thank you."*
+  > *"For CFOs and compliance teams, every decision is cryptographically signed with SHA-256 chaining in IST. All 25 automated tests pass in under 1 second. GymOS transforms revenue recovery from a dumb retry loop into an intelligent, autonomous financial engine on Razorpay Rails. Thank you."*
 
 ---
 
 ## 💻 Quick Evaluation Commands
 
 ```bash
-# 1. Run Complete Automated Pytest Suite (22/22 Passing)
+# 1. Run Complete Automated Pytest Suite (25/25 Passing)
 pytest -v
 
 # 2. Run CLI Benchmark & Live Recovery Simulator

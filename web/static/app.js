@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     lucide.createIcons();
   }
   await loadPresetScenarios();
+  await loadPolicies();
   await refreshAuditTrail();
   initCharts();
 
@@ -451,6 +452,47 @@ async function refreshAuditTrail() {
   }
 }
 
+async function loadPolicies() {
+  try {
+    const res = await fetch("/api/policies");
+    if (!res.ok) return;
+    const data = await res.json();
+    
+    const sliderDiscount = document.getElementById("slider-discount");
+    const valDiscount = document.getElementById("val-discount");
+    if (sliderDiscount && data.max_discount_percentage !== undefined) {
+      sliderDiscount.value = data.max_discount_percentage;
+      if (valDiscount) valDiscount.innerText = `${data.max_discount_percentage}.0%`;
+    }
+
+    const sliderTouches = document.getElementById("slider-touches");
+    const valTouches = document.getElementById("val-touches");
+    if (sliderTouches && data.max_touches !== undefined) {
+      sliderTouches.value = data.max_touches;
+      if (valTouches) valTouches.innerText = `${data.max_touches} touches`;
+    }
+
+    const sliderVip = document.getElementById("slider-vip");
+    const valVip = document.getElementById("val-vip");
+    if (sliderVip && data.vip_threshold_inr !== undefined) {
+      sliderVip.value = data.vip_threshold_inr;
+      if (valVip) valVip.innerText = `₹${data.vip_threshold_inr.toLocaleString('en-IN')}`;
+    }
+
+    const toggleOptout = document.getElementById("toggle-optout");
+    if (toggleOptout && data.strict_opt_out !== undefined) {
+      toggleOptout.checked = data.strict_opt_out;
+    }
+
+    const keyInput = document.getElementById("input-rzp-key-id");
+    if (keyInput && data.razorpay_key_id) {
+      keyInput.value = data.razorpay_key_id;
+    }
+  } catch (err) {
+    console.error("Failed to load initial policies:", err);
+  }
+}
+
 async function savePolicies() {
   const payload = {
     max_discount_percentage: parseFloat(document.getElementById("slider-discount").value),
@@ -468,7 +510,7 @@ async function savePolicies() {
       body: JSON.stringify(payload)
     });
     const result = await res.json();
-    alert("Policy guardrails & Razorpay credentials successfully updated!");
+    alert(`✅ Policy Guardrails Successfully Updated!\n• Max Discount: ${payload.max_discount_percentage}%\n• Max Touches: ${payload.max_touches}\n• Strict Opt-Out: ${payload.strict_opt_out}\n• VIP Threshold: ₹${payload.vip_threshold_inr}`);
   } catch (err) {
     alert("Failed to save policies: " + err.message);
   }

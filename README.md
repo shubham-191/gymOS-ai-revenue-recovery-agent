@@ -7,7 +7,7 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-005571.svg?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Razorpay API](https://img.shields.io/badge/Razorpay-Payment%20Links%20%26%20Retries-0C2340.svg?logo=razorpay)](https://razorpay.com)
-[![Pytest: 22/22 Passing](https://img.shields.io/badge/Pytest-22%2F22%20Passing-success.svg)](tests/)
+[![Pytest: 25/25 Passing](https://img.shields.io/badge/Pytest-25%2F25%20Passing-success.svg)](tests/)
 [![Benchmark: 100 Scenarios](https://img.shields.io/badge/Benchmark-100%20Scenarios%20Passed-10B981.svg)](#-benchmark-results-the-bar)
 [![Multi-Agent Swarm](https://img.shields.io/badge/Architecture-5--Agent%20Swarm-8B5CF6.svg)](#-system-architecture--5-agent-swarm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

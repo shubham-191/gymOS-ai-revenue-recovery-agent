@@ -26,8 +26,22 @@ class UserIntentType:
 
 
 class ConversationalRecoveryAgent:
-    def __init__(self, razorpay_client: Optional[RazorpayRecoveryClient] = None):
+    def __init__(
+        self,
+        razorpay_client: Optional[RazorpayRecoveryClient] = None,
+        guardrail_engine: Optional[Any] = None
+    ):
         self.rzp = razorpay_client or RazorpayRecoveryClient()
+        if guardrail_engine:
+            self.guardrail = guardrail_engine
+        else:
+            from agent.policy_guardrails import PolicyGuardrailEngine
+            self.guardrail = PolicyGuardrailEngine(
+                max_discount_percentage=settings.MAX_DISCOUNT_PERCENT,
+                max_touches=settings.MAX_RECOVERY_ATTEMPTS,
+                strict_opt_out=True,
+                vip_threshold_inr=settings.VIP_ESCALATION_THRESHOLD_INR
+            )
         self.lifecycle = SubscriptionLifecycleManager()
         self.openai_key = settings.OPENAI_API_KEY
         self.gemini_key = settings.GEMINI_API_KEY
@@ -97,9 +111,65 @@ class ConversationalRecoveryAgent:
             )
 
         elif intent == UserIntentType.REQUEST_DISCOUNT:
-            # Maximum 15% discount bounded rule
-            discount_pct = 15.0
+            max_policy_discount = float(self.guardrail.max_discount)
+            requested_pct = extracted_data.get("requested_percent")
+            first_name = member.name.split()[0] if member.name else "Friend"
+
+            # 1. Zero Discount Policy Check (Merchant disabled discounts)
+            if max_policy_discount <= 0.0:
+                action_executed = {
+                    "action": "DISCOUNT_REJECTED_POLICY",
+                    "discount_percent": 0.0,
+                    "reason": "Merchant ZERO_DISCOUNT_POLICY active"
+                }
+                reply_text = (
+                    f"Hi {first_name}! Hamare current membership plans par direct cash discounts restricted hain "
+                    f"taaki sabhi members ko uniform fair pricing mile. 🤝\n\n"
+                    f"Lekin aapke continuous workouts ke liye humne aapke renewal ke saath "
+                    f"**1 Complementary Personal Trainer Session + 1 Nutrition Consultation (Worth ₹1,500)** "
+                    f"FREE attach kiya hai! 🏋️‍♂️\n\n"
+                    f"Original Amount: ₹{member.membership_amount:,.0f}\n"
+                    f"Bina workout break kiye continue karein!"
+                )
+                return {
+                    "intent": intent,
+                    "member_id": member.member_id,
+                    "reply_message": reply_text,
+                    "payment_link": None,
+                    "action_executed": action_executed
+                }
+
+            # 2. Determine Negotiated Discount Percentage (Graduated, behavioral negotiation)
+            discount_pct = 0.0
+            was_clamped = False
+
+            if requested_pct is not None and requested_pct > 0:
+                # User specifically asked for a percentage (e.g. "give me 20% discount" or "10% off")
+                if requested_pct > max_policy_discount:
+                    discount_pct = max_policy_discount
+                    was_clamped = True
+                else:
+                    discount_pct = requested_pct
+            else:
+                # User asked generally: "any discount?", "best price", "kam karo"
+                # Check engagement & churn risk:
+                is_active_member = (member.days_since_last_checkin <= 7 and member.actual_visits_last_30_days >= 6)
+                is_at_risk_churn = (member.days_since_last_checkin > 14 or member.actual_visits_last_30_days <= 3)
+
+                if is_active_member:
+                    # Active regular attendee asking casually -> offer modest starter token (e.g. 5%), not max margin!
+                    discount_pct = min(5.0, max_policy_discount)
+                elif is_at_risk_churn:
+                    # At-risk silent churner -> offer meaningful retention discount
+                    discount_pct = min(10.0, max_policy_discount)
+                else:
+                    # Standard member baseline
+                    discount_pct = min(7.5, max_policy_discount)
+
+            # Strict guardrail policy ceiling enforcement
+            discount_pct = max(0.0, min(discount_pct, max_policy_discount))
             discounted_amt = round(member.membership_amount * (1.0 - (discount_pct / 100.0)), 2)
+
             link_res = self.rzp.create_dynamic_payment_link(
                 amount_inr=discounted_amt,
                 member_name=member.name,
@@ -110,14 +180,33 @@ class ConversationalRecoveryAgent:
             payment_link = link_res.get("short_url")
             mock_id = link_res.get("id", "plink_pay")
             display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{mock_id}")
-            action_executed = {"action": "DISCOUNT_GRANTED", "discount_percent": discount_pct, "razorpay_link": payment_link, "display_url": display_link}
+            
+            action_executed = {
+                "action": "DISCOUNT_GRANTED",
+                "discount_percent": discount_pct,
+                "max_policy_ceiling": max_policy_discount,
+                "was_clamped_by_guardrail": was_clamped,
+                "razorpay_link": payment_link,
+                "display_url": display_link
+            }
             display_amt_str = f"{discounted_amt:,.0f}" if discounted_amt.is_integer() or discounted_amt == int(discounted_amt) else f"{discounted_amt:,.2f}"
-            reply_text = (
-                f"Special loyalty member hone ke naate, humne aapke account par **{discount_pct:.0f}% direct discount** apply kiya hai! 🎉\n\n"
-                f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
-                f"👉 Secure Razorpay Link: {display_link}\n"
-                f"(Offer valid for next 24 hours only)"
-            )
+
+            if was_clamped:
+                reply_text = (
+                    f"Aapne {requested_pct:.0f}% discount request kiya tha, lekin hamari strict system policy "
+                    f"maximum **{max_policy_discount:.0f}% margin discount** allow karti hai. 🛡️\n\n"
+                    f"Humne aapke account par best possible **{discount_pct:.0f}% discount** apply kar diya hai!\n"
+                    f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
+                    f"👉 Secure Razorpay Link: {display_link}\n"
+                    f"(Offer valid for next 24 hours only)"
+                )
+            else:
+                reply_text = (
+                    f"Special loyalty member hone ke naate, humne aapke account par **{discount_pct:.0f}% direct discount** apply kiya hai! 🎉\n\n"
+                    f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
+                    f"👉 Secure Razorpay Link: {display_link}\n"
+                    f"(Offer valid for next 24 hours only)"
+                )
 
         elif intent == UserIntentType.EXPLICIT_CANCELLATION:
             action_executed = {"action": "CANCELLATION_RECORDED", "opt_out": True}
@@ -213,6 +302,18 @@ class ConversationalRecoveryAgent:
             
         return "5th of the month"
 
+    def _extract_requested_discount(self, text: str) -> Optional[float]:
+        import re
+        t = text.lower()
+        # Matches e.g. "20% discount", "10 %", "15 percent", "30 percent off", "25%"
+        pct_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:%|percent|pratishat|pct)', t)
+        if pct_match:
+            try:
+                return float(pct_match.group(1))
+            except ValueError:
+                pass
+        return None
+
     def _classify_intent(self, text: str) -> (str, Dict[str, Any]):
         t = text.lower()
         if any(w in t for w in ["injured", "injury", "fracture", "accident", "travel", "traveling", "trip", "out of station", "village", "pause", "freeze", "hometown"]):
@@ -223,8 +324,9 @@ class ConversationalRecoveryAgent:
         if any(w in t for w in ["salary", "month end", "5th", "1st", "10th", "20th", "25th", "pay later", "next week", "paise aane do"]):
             date = self._extract_promise_date(text)
             return UserIntentType.SALARY_DELAY_PROMISE, {"date": date}
-        if any(w in t for w in ["discount", "offer", "coupon", "kam karo", "best price"]):
-            return UserIntentType.REQUEST_DISCOUNT, {}
+        if any(w in t for w in ["discount", "offer", "coupon", "kam karo", "best price", "% off", "percent off", "off dedo", "kam kardo", "concession"]):
+            requested_pct = self._extract_requested_discount(text)
+            return UserIntentType.REQUEST_DISCOUNT, {"requested_percent": requested_pct}
         if any(w in t for w in ["cancel", "stop", "mat message karo", "band karo", "don't want", "left gym", "shifted"]):
             return UserIntentType.EXPLICIT_CANCELLATION, {}
         if any(w in t for w in ["link", "pay", "payment", "qr", "how to"]):

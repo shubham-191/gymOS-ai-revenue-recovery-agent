@@ -68,6 +68,59 @@ def test_chat_bounded_discount_request(chat_agent, sample_member):
     assert res["payment_link"] is not None
 
 
+def test_chat_dynamic_guardrail_clamping_to_9_percent(sample_member):
+    from agent.policy_guardrails import PolicyGuardrailEngine
+    # Merchant sets max discount ceiling to 9.0%
+    custom_guardrail = PolicyGuardrailEngine(max_discount_percentage=9.0)
+    agent_with_9pct_cap = ConversationalRecoveryAgent(guardrail_engine=custom_guardrail)
+    
+    # User asks for 20% discount
+    res = agent_with_9pct_cap.handle_incoming_message(sample_member, "Can I get 20% discount on renewal?")
+    assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
+    assert res["action_executed"]["discount_percent"] == 9.0
+    assert res["action_executed"]["was_clamped_by_guardrail"] is True
+    assert "9%" in res["reply_message"]
+    assert "20%" in res["reply_message"]
+
+
+def test_chat_graduated_discount_not_surrendering_max_on_first_ask():
+    from agent.policy_guardrails import PolicyGuardrailEngine
+    active_member = MemberProfile(
+        member_id="mem_active_regular",
+        name="Aman Gupta",
+        phone="+919876543210",
+        email="aman@example.com",
+        membership_tier=MembershipTier.ANNUAL_ELITE,
+        membership_amount=10000.0,
+        plan_start_date="2026-01-01",
+        plan_expiry_date="2026-09-01",
+        days_since_last_checkin=2,
+        actual_visits_last_30_days=12  # Regular dedicated attendee
+    )
+    guardrail_15 = PolicyGuardrailEngine(max_discount_percentage=15.0)
+    agent = ConversationalRecoveryAgent(guardrail_engine=guardrail_15)
+
+    # Active member casually asks: "any discount available?"
+    res = agent.handle_incoming_message(active_member, "Is there any discount available?")
+    assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
+    # Should NOT give 15% immediately! Gives starter 5% token
+    assert res["action_executed"]["discount_percent"] == 5.0
+    assert "5%" in res["reply_message"]
+
+
+def test_chat_zero_discount_policy_rejection(sample_member):
+    from agent.policy_guardrails import PolicyGuardrailEngine
+    zero_guardrail = PolicyGuardrailEngine(max_discount_percentage=0.0)
+    agent = ConversationalRecoveryAgent(guardrail_engine=zero_guardrail)
+
+    res = agent.handle_incoming_message(sample_member, "Can you give me discount?")
+    assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
+    assert res["action_executed"]["action"] == "DISCOUNT_REJECTED_POLICY"
+    assert res["action_executed"]["discount_percent"] == 0.0
+    assert "Personal Trainer" in res["reply_message"]
+
+
+
 def test_continuous_subscription_cycle_accounting():
     from gymos_core.subscription_lifecycle import SubscriptionLifecycleManager
     

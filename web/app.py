@@ -60,7 +60,7 @@ orchestrator = RecoveryOrchestrator(
 )
 webhook_processor = WebhookProcessor(rzp_client)
 benchmark_runner = BenchmarkRunner()
-conversational_agent = ConversationalRecoveryAgent(razorpay_client=rzp_client)
+conversational_agent = ConversationalRecoveryAgent(razorpay_client=rzp_client, guardrail_engine=guardrail_engine)
 b2b_engine = B2BAccountsReceivableEngine(razorpay_client=rzp_client)
 swarm_coordinator = MultiAgentWarRoomCoordinator(
     razorpay_client=rzp_client,
@@ -162,6 +162,25 @@ async def update_policies(req: PolicyUpdateRequest):
     guardrail_engine.max_touches = req.max_touches
     guardrail_engine.strict_opt_out = req.strict_opt_out
     guardrail_engine.vip_threshold = req.vip_threshold_inr
+
+    # Sync live reference to all agent modules
+    conversational_agent.guardrail = guardrail_engine
+    orchestrator.guardrails = guardrail_engine
+    swarm_coordinator.guardrails = guardrail_engine
+
+    # Persist to policies.json
+    policies_path = BASE_DIR / "config" / "policies.json"
+    if policies_path.exists():
+        try:
+            p_data = json.loads(policies_path.read_text(encoding="utf-8"))
+            if "guardrails" in p_data:
+                p_data["guardrails"]["max_discount_percentage"] = req.max_discount_percentage
+                p_data["guardrails"]["max_recovery_touches"] = req.max_touches
+                p_data["guardrails"]["strict_opt_out_stop"] = req.strict_opt_out
+                p_data["guardrails"]["vip_escalation_threshold_inr"] = req.vip_threshold_inr
+            policies_path.write_text(json.dumps(p_data, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning("Could not persist updated policies to policies.json: %s", e)
 
     # Update Razorpay client if new keys provided
     if req.razorpay_key_id and req.razorpay_key_secret:
