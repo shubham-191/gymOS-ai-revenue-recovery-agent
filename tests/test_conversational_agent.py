@@ -68,14 +68,27 @@ def test_chat_bounded_discount_request(chat_agent, sample_member):
     assert res["payment_link"] is not None
 
 
-def test_chat_dynamic_guardrail_clamping_to_9_percent(sample_member):
+def test_chat_dynamic_guardrail_clamping_to_9_percent():
     from agent.policy_guardrails import PolicyGuardrailEngine
+    at_risk_member = MemberProfile(
+        member_id="mem_clamped_test",
+        name="Sunita Verma",
+        phone="+919876543210",
+        email="sunita@example.com",
+        membership_tier=MembershipTier.ANNUAL_ELITE,
+        membership_amount=12000.0,
+        plan_start_date="2026-01-01",
+        plan_expiry_date="2026-09-01",
+        days_since_last_checkin=12,
+        actual_visits_last_30_days=3,
+        baseline_visits_per_week=2.0
+    )
     # Merchant sets max discount ceiling to 9.0%
     custom_guardrail = PolicyGuardrailEngine(max_discount_percentage=9.0)
     agent_with_9pct_cap = ConversationalRecoveryAgent(guardrail_engine=custom_guardrail)
     
     # User asks for 20% discount
-    res = agent_with_9pct_cap.handle_incoming_message(sample_member, "Can I get 20% discount on renewal?")
+    res = agent_with_9pct_cap.handle_incoming_message(at_risk_member, "Can I get 20% discount on renewal?")
     assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
     assert res["action_executed"]["discount_percent"] == 9.0
     assert res["action_executed"]["was_clamped_by_guardrail"] is True
@@ -83,10 +96,10 @@ def test_chat_dynamic_guardrail_clamping_to_9_percent(sample_member):
     assert "20%" in res["reply_message"]
 
 
-def test_chat_graduated_discount_not_surrendering_max_on_first_ask():
+def test_chat_super_regular_discount_denied_with_value_add():
     from agent.policy_guardrails import PolicyGuardrailEngine
-    active_member = MemberProfile(
-        member_id="mem_active_regular",
+    super_regular_member = MemberProfile(
+        member_id="mem_super_regular",
         name="Aman Gupta",
         phone="+919876543210",
         email="aman@example.com",
@@ -95,13 +108,41 @@ def test_chat_graduated_discount_not_surrendering_max_on_first_ask():
         plan_start_date="2026-01-01",
         plan_expiry_date="2026-09-01",
         days_since_last_checkin=2,
-        actual_visits_last_30_days=12  # Regular dedicated attendee
+        actual_visits_last_30_days=16  # Super dedicated regular attendee (16 workouts)
     )
     guardrail_15 = PolicyGuardrailEngine(max_discount_percentage=15.0)
     agent = ConversationalRecoveryAgent(guardrail_engine=guardrail_15)
 
-    # Active member casually asks: "any discount available?"
-    res = agent.handle_incoming_message(active_member, "Is there any discount available?")
+    # Super regular member asks: "any discount available?"
+    res = agent.handle_incoming_message(super_regular_member, "Is there any discount available?")
+    assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
+    # Zero cash discount granted! Zero margin leakage for power users
+    assert res["action_executed"]["discount_percent"] == 0.0
+    assert res["action_executed"]["is_super_regular"] is True
+    assert res["action_executed"]["action"] == "DISCOUNT_DENIED_SUPER_REGULAR"
+    assert "super regular dedicated athlete" in res["reply_message"]
+    assert "InBody" in res["reply_message"]
+
+
+def test_chat_graduated_discount_not_surrendering_max_on_first_ask():
+    from agent.policy_guardrails import PolicyGuardrailEngine
+    moderate_member = MemberProfile(
+        member_id="mem_moderate_regular",
+        name="Rohan Mehra",
+        phone="+919876543210",
+        email="rohan@example.com",
+        membership_tier=MembershipTier.ANNUAL_ELITE,
+        membership_amount=10000.0,
+        plan_start_date="2026-01-01",
+        plan_expiry_date="2026-09-01",
+        days_since_last_checkin=7,
+        actual_visits_last_30_days=5  # Moderate attendee
+    )
+    guardrail_15 = PolicyGuardrailEngine(max_discount_percentage=15.0)
+    agent = ConversationalRecoveryAgent(guardrail_engine=guardrail_15)
+
+    # Moderate member casually asks: "any discount available?"
+    res = agent.handle_incoming_message(moderate_member, "Is there any discount available?")
     assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
     # Should NOT give 15% immediately! Gives starter 5% token
     assert res["action_executed"]["discount_percent"] == 5.0

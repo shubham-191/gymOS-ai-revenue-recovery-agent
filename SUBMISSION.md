@@ -19,7 +19,7 @@
 | **5. Dynamic Two-Way WhatsApp Negotiation** | Real-time state machine parsing natural language durations (e.g., 3 weeks $\rightarrow$ 21 days), salary delays, downgrades, and continuous billing cycle anchoring. | [`agent/conversational_agent.py`](agent/conversational_agent.py)<br>[`gymos_core/subscription_lifecycle.py`](gymos_core/subscription_lifecycle.py) |
 | **6. Smart Gateway Routing & Outage Failover** | Real-time gateway health monitoring (HDFC, ICICI, Axis, SBI) with automated rerouting away from degraded banks. | [`razorpay_client/smart_optimizer.py`](razorpay_client/smart_optimizer.py)<br>[`tests/test_smart_optimizer.py`](tests/test_smart_optimizer.py) |
 | **7. B2B Corporate Wellness Invoice Dunning** | 4-Stage escalating aging dunning for corporate gym accounts from gentle payment links to automated turnstile access lock. | [`agent/b2b_dunning.py`](agent/b2b_dunning.py)<br>[`tests/test_b2b_dunning.py`](tests/test_b2b_dunning.py) |
-| **8. Automated Test Coverage** | 25/25 unit & integration tests passing in <1s. | [`tests/`](tests/) |
+| **8. Automated Test Coverage** | 26/26 unit & integration tests passing in <1s. | [`tests/`](tests/) |
 
 ---
 

@@ -139,7 +139,53 @@ class ConversationalRecoveryAgent:
                     "action_executed": action_executed
                 }
 
-            # 2. Determine Negotiated Discount Percentage (Graduated, behavioral negotiation)
+            # 2. Super Regular / Power User Check (Zero Churn Risk -> Zero Cash Discount!)
+            is_super_regular = (
+                member.days_since_last_checkin <= 5 
+                and (member.actual_visits_last_30_days >= 10 or member.baseline_visits_per_week >= 3.0)
+            )
+
+            if is_super_regular:
+                # Generate link for FULL regular price (0% discount)
+                link_res = self.rzp.create_dynamic_payment_link(
+                    amount_inr=member.membership_amount,
+                    member_name=member.name,
+                    member_phone=member.phone,
+                    member_email=member.email,
+                    description=f"GymOS Renewal - {member.membership_tier.value} ({member.name})"
+                )
+                payment_link = link_res.get("short_url")
+                mock_id = link_res.get("id", "plink_pay")
+                display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{mock_id}")
+
+                action_executed = {
+                    "action": "DISCOUNT_DENIED_SUPER_REGULAR",
+                    "discount_percent": 0.0,
+                    "is_super_regular": True,
+                    "visits_last_30_days": member.actual_visits_last_30_days,
+                    "value_add_offered": "FREE_PT_AND_INBODY_SCAN",
+                    "razorpay_link": payment_link,
+                    "display_url": display_link
+                }
+                reply_text = (
+                    f"Arre {first_name} bhai! Aap toh hamare super regular dedicated athlete hain "
+                    f"(Last 30 dino mein **{member.actual_visits_last_30_days} active workouts**)! 💪🔥\n\n"
+                    f"Direct fee discounts policy ke tahat sirf long-break / inactive members ke winback ke liye reserve hote hain. "
+                    f"Lekin aapki dedication celebrate karne ke liye, humne aapke renewal par "
+                    f"**FREE 1-on-1 Personal Trainer Assessment + InBody Body Composition Scan (Worth ₹1,200)** bilkul free unlock kar diya hai! 🏋️‍♂️\n\n"
+                    f"👉 Secure Renewal Link: {display_link}\n"
+                    f"Amount: ₹{member.membership_amount:,.0f}\n"
+                    f"Apna workout streak bina kisi interruption ke maintain kijiye!"
+                )
+                return {
+                    "intent": intent,
+                    "member_id": member.member_id,
+                    "reply_message": reply_text,
+                    "payment_link": payment_link,
+                    "action_executed": action_executed
+                }
+
+            # 3. Non-super regular members: Determine Negotiated Discount Percentage
             discount_pct = 0.0
             was_clamped = False
 
@@ -153,11 +199,11 @@ class ConversationalRecoveryAgent:
             else:
                 # User asked generally: "any discount?", "best price", "kam karo"
                 # Check engagement & churn risk:
-                is_active_member = (member.days_since_last_checkin <= 7 and member.actual_visits_last_30_days >= 6)
+                is_moderate_member = (member.days_since_last_checkin <= 7 and member.actual_visits_last_30_days >= 5)
                 is_at_risk_churn = (member.days_since_last_checkin > 14 or member.actual_visits_last_30_days <= 3)
 
-                if is_active_member:
-                    # Active regular attendee asking casually -> offer modest starter token (e.g. 5%), not max margin!
+                if is_moderate_member:
+                    # Moderate attendee asking casually -> offer modest starter token (e.g. 5%), not max margin!
                     discount_pct = min(5.0, max_policy_discount)
                 elif is_at_risk_churn:
                     # At-risk silent churner -> offer meaningful retention discount
