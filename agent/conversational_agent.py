@@ -55,9 +55,9 @@ class ConversationalRecoveryAgent:
             action_executed = freeze_res
             reply_text = (
                 f"No worries at all, {member.name.split()[0]}! Health & travel come first. 🧘‍♂️\n\n"
-                f"Humne aapka GymOS membership & billing **{freeze_days} dino ke liye freeze (pause)** kar diya hai "
+                f"Humne aapka GymOS membership & billing exactly **{freeze_days} dino ke liye freeze (pause)** kar diya hai "
                 f"(Resume date: {freeze_res['resume_date']}). Zero cancellation charge!\n\n"
-                f"Jab aap wapas aayenge, tab streak continue karenge. Get well soon / Safe travels! 🚀"
+                f"Aapki membership **{freeze_res['resume_date']}** se seamless continue hogi bina kisi extra penalty ke. Get well soon / Safe travels! 🚀"
             )
 
         elif intent == UserIntentType.PRICE_TOO_HIGH:
@@ -149,14 +149,74 @@ class ConversationalRecoveryAgent:
             "action_executed": action_executed
         }
 
+    def _extract_freeze_days(self, text: str) -> int:
+        import re
+        t = text.lower()
+        
+        # 1. Matches weeks: "3 weeks", "2 week", "3 hafte", "2 hafto"
+        week_match = re.search(r'(\d+)\s*(?:weeks?|hafte|hafta|hafto)', t)
+        if week_match:
+            return int(week_match.group(1)) * 7
+
+        # 2. Matches months: "3 months", "1 month", "2 mahine", "1 mahina"
+        month_match = re.search(r'(\d+)\s*(?:months?|mahine|mahina|maheene)', t)
+        if month_match:
+            return int(month_match.group(1)) * 30
+
+        # 3. Matches days: "15 days", "10 day", "21 din", "45 dino"
+        day_match = re.search(r'(\d+)\s*(?:days?|din|dino)', t)
+        if day_match:
+            return int(day_match.group(1))
+
+        # 4. English / Hindi words
+        if "one week" in t or "a week" in t or "1 week" in t or "ek hafta" in t:
+            return 7
+        if "two weeks" in t or "2 weeks" in t or "do hafte" in t:
+            return 14
+        if "three weeks" in t or "3 weeks" in t or "teen hafte" in t:
+            return 21
+        if "four weeks" in t or "4 weeks" in t or "char hafte" in t:
+            return 28
+        if "one month" in t or "a month" in t or "ek mahina" in t:
+            return 30
+        if "two months" in t or "2 months" in t or "do mahine" in t:
+            return 60
+        if "three months" in t or "3 months" in t or "teen mahine" in t:
+            return 90
+
+        # 5. Number after pause/freeze/travel (e.g., "pause for 10", "freeze 45")
+        num_match = re.search(r'(?:pause|freeze|travel|traveling|holiday|bed rest|rest for|leave for)\s*(?:for\s*)?(\d+)', t)
+        if num_match:
+            return int(num_match.group(1))
+
+        return 30
+
+    def _extract_promise_date(self, text: str) -> str:
+        import re
+        t = text.lower()
+        
+        # Matches e.g. "25th", "10th", "5th", "1st", "15th", "20th"
+        day_match = re.search(r'\b(\d{1,2}(?:st|nd|rd|th)?)\b', t)
+        if day_match:
+            return day_match.group(1)
+            
+        if "next week" in t or "agle hafte" in t:
+            return "Next Monday"
+        if "month end" in t or "month-end" in t or "mahine ke end" in t:
+            return "End of the month"
+            
+        return "5th of the month"
+
     def _classify_intent(self, text: str) -> (str, Dict[str, Any]):
         t = text.lower()
-        if any(w in t for w in ["injured", "injury", "fracture", "accident", "travel", "traveling", "trip", "out of station", "village", "pause", "freeze"]):
-            return UserIntentType.TRAVEL_OR_INJURY, {"days": 30}
+        if any(w in t for w in ["injured", "injury", "fracture", "accident", "travel", "traveling", "trip", "out of station", "village", "pause", "freeze", "hometown"]):
+            days = self._extract_freeze_days(text)
+            return UserIntentType.TRAVEL_OR_INJURY, {"days": days}
         if any(w in t for w in ["expensive", "costly", "mehnga", "budget", "can't afford", "no money", "cheaper", "downgrade"]):
             return UserIntentType.PRICE_TOO_HIGH, {}
-        if any(w in t for w in ["salary", "month end", "5th", "1st", "10th", "pay later", "next week", "paise aane do"]):
-            return UserIntentType.SALARY_DELAY_PROMISE, {"date": "5th of the month"}
+        if any(w in t for w in ["salary", "month end", "5th", "1st", "10th", "20th", "25th", "pay later", "next week", "paise aane do"]):
+            date = self._extract_promise_date(text)
+            return UserIntentType.SALARY_DELAY_PROMISE, {"date": date}
         if any(w in t for w in ["discount", "offer", "coupon", "kam karo", "best price"]):
             return UserIntentType.REQUEST_DISCOUNT, {}
         if any(w in t for w in ["cancel", "stop", "mat message karo", "band karo", "don't want", "left gym", "shifted"]):

@@ -33,6 +33,18 @@ def test_chat_injury_freeze_intent(chat_agent, sample_member):
     assert "freeze" in res["reply_message"].lower()
 
 
+def test_chat_travel_exact_days_freeze(chat_agent, sample_member):
+    res = chat_agent.handle_incoming_message(sample_member, "I am traveling to my hometown for 3 weeks and will resume after that.")
+    assert res["intent"] == UserIntentType.TRAVEL_OR_INJURY
+    assert res["action_executed"]["action"] == "FREEZE_MEMBERSHIP"
+    assert res["action_executed"]["freeze_duration_days"] == 21
+    assert "21 dino ke liye freeze" in res["reply_message"]
+
+    res_10 = chat_agent.handle_incoming_message(sample_member, "Going on a family trip for 10 days, please pause.")
+    assert res_10["action_executed"]["freeze_duration_days"] == 10
+    assert "10 dino ke liye freeze" in res_10["reply_message"]
+
+
 def test_chat_price_resistance_downgrade(chat_agent, sample_member):
     res = chat_agent.handle_incoming_message(sample_member, "Annual plan is too expensive for me right now. Can I downgrade to monthly?")
     assert res["intent"] == UserIntentType.PRICE_TOO_HIGH
@@ -42,10 +54,11 @@ def test_chat_price_resistance_downgrade(chat_agent, sample_member):
 
 
 def test_chat_salary_delay_promise_to_pay(chat_agent, sample_member):
-    res = chat_agent.handle_incoming_message(sample_member, "Salary delayed this month, please wait until 5th.")
+    res = chat_agent.handle_incoming_message(sample_member, "Salary delayed this month, please wait until 25th.")
     assert res["intent"] == UserIntentType.SALARY_DELAY_PROMISE
     assert res["action_executed"]["action"] == "PROMISE_TO_PAY"
-    assert "5th" in res["reply_message"]
+    assert res["action_executed"]["promised_payment_date"] == "25th"
+    assert "25th" in res["reply_message"]
 
 
 def test_chat_bounded_discount_request(chat_agent, sample_member):
