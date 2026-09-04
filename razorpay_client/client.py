@@ -89,6 +89,9 @@ class RazorpayRecoveryClient:
                 }
             except Exception as e:
                 logger.error("Live Razorpay API call failed (%s). Emulating fallback response.", e)
+                last_error_str = str(e)
+        else:
+            last_error_str = None
 
         # High-fidelity interactive Sandbox checkout response
         mock_id = f"plink_{uuid.uuid4().hex[:12]}"
@@ -105,6 +108,7 @@ class RazorpayRecoveryClient:
             "currency": "INR",
             "status": "created",
             "mock": True,
+            "api_error": last_error_str,
             "expire_by": expire_by,
             "description": description,
             "customer": {
