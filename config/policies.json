@@ -2,12 +2,16 @@
   "merchant_name": "IronPeak Fitness GymOS",
   "currency": "INR",
   "guardrails": {
-    "max_discount_percentage": 15.0,
-    "max_recovery_touches": 3,
+    "max_discount_percentage": 9.0,
+    "max_recovery_touches": 2,
     "min_touch_cooldown_hours": 24,
     "strict_opt_out_stop": true,
-    "vip_escalation_threshold_inr": 50000.0,
-    "allowed_channels": ["whatsapp", "email", "sms"]
+    "vip_escalation_threshold_inr": 45000.0,
+    "allowed_channels": [
+      "whatsapp",
+      "email",
+      "sms"
+    ]
   },
   "playbooks": {
     "TECHNICAL_BANKING_FAILURE": {
@@ -47,7 +51,7 @@
     },
     "HIGH_VALUE_VIP_RISK": {
       "strategy": "HUMAN_ESCALATION",
-      "description": "Annual corporate or VIP plan > ₹50,000. Escalate directly to Gym General Manager.",
+      "description": "Annual corporate or VIP plan > \u20b950,000. Escalate directly to Gym General Manager.",
       "default_discount": 0.0,
       "preferred_channel": "manager_call_ticket",
       "retry_delay_hours": 1

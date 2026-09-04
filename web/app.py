@@ -2,6 +2,8 @@
 FastAPI Server for GymOS AI Revenue Recovery Engine & Interactive Console.
 """
 import os
+import json
+import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, Header, Request
@@ -9,6 +11,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 from config.settings import settings
 from gymos_core.models import MemberProfile, RecoveryIntervention

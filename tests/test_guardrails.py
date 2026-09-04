@@ -78,3 +78,32 @@ def test_guardrail_max_touch_frequency(guardrails):
     )
     assert allowed is False
     assert verdict == "BLOCKED_MAX_TOUCHES"
+
+
+@pytest.mark.anyio
+async def test_api_policies_update_and_persistence():
+    from web.app import get_policies, update_policies, PolicyUpdateRequest
+
+    # Test GET policies
+    res_get = await get_policies()
+    assert "max_discount_percentage" in res_get
+
+    # Test POST policies update (e.g. changing max discount to 9.0%)
+    req = PolicyUpdateRequest(
+        max_discount_percentage=9.0,
+        max_touches=2,
+        strict_opt_out=True,
+        vip_threshold_inr=45000.0,
+        razorpay_key_id="rzp_test_sample",
+        razorpay_key_secret="rzp_sec_sample"
+    )
+    res_post = await update_policies(req)
+    assert res_post["status"] == "UPDATED"
+    assert res_post["policies"]["max_discount_percentage"] == 9.0
+
+    # Verify updated values via GET
+    res_get2 = await get_policies()
+    assert res_get2["max_discount_percentage"] == 9.0
+    assert res_get2["max_touches"] == 2
+
+

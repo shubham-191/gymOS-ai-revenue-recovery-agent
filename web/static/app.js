@@ -563,8 +563,12 @@ async function savePolicies() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errText}`);
+    }
     const result = await res.json();
-    alert(`✅ Policy Guardrails Successfully Updated & Active!\n• Max Discount: ${payload.max_discount_percentage}%\n• Max Touches: ${payload.max_touches}\n• Strict Opt-Out: ${payload.strict_opt_out}\n• VIP Threshold: ₹${payload.vip_threshold_inr}`);
+    alert(`✅ Policy Guardrails Successfully Updated & Active!\n• Max Discount: ${payload.max_discount_percentage}%\n• Max Touches: ${payload.max_touches}\n• Strict Opt-Out: ${payload.strict_opt_out}\n• VIP Threshold: ₹${payload.vip_threshold_inr.toLocaleString('en-IN')}`);
   } catch (err) {
     alert("Failed to save policies: " + err.message);
   }
