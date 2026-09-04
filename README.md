@@ -100,6 +100,87 @@ flowchart TD
 
 ---
 
+## 🏛️ Part of the GymOS Microservices Ecosystem
+
+The **AI Revenue Recovery Sentinel** is engineered as a dedicated intelligent microservice within the **GymOS Enterprise Platform**—a cloud-native SaaS and IoT ecosystem powering modern gym chains, fitness studios, and enterprise wellness facilities across India.
+
+```mermaid
+flowchart LR
+    subgraph Ecosystem["GymOS Microservices Ecosystem"]
+        direction TB
+        IOT["IoT Turnstile & Attendance\n(gymos-iot-attendance)"]
+        SUB["Subscription & Billing Core\n(gymos-subscription-core)"]
+        B2B["Corporate Wellness Billing\n(gymos-b2b-billing)"]
+        APP["Member Mobile App / Portal\n(gymos-member-app)"]
+    end
+
+    subgraph KafkaBroker["Apache Kafka Event Bus"]
+        direction TB
+        T1[("gymos.attendance.v1")]
+        T2[("razorpay.payment.failed.v1")]
+        T3[("gymos.membership.status.v1")]
+        T4[("gymos.corporate.invoice.v1")]
+        T5[("gymos.recovery.action.v1")]
+        T6[("gymos.turnstile.access.v1")]
+    end
+
+    subgraph RecoveryService["gymos-revenue-recovery-agent (This Repo)"]
+        direction TB
+        AGENT["Autonomous 5-Agent Swarm\n(Diagnose ➔ Guardrails ➔ Negotiate ➔ Route ➔ Audit)"]
+        RZP["Razorpay Rails Integration\n(Dynamic Payment Links, Smart Retries, Webhooks)"]
+    end
+
+    IOT -->|"Publish check-in & decay"| T1
+    SUB -->|"Publish renewal & grace"| T3
+    B2B -->|"Publish aging invoices"| T4
+
+    T1 -->|"Consume telemetry"| AGENT
+    T2 -->|"Consume failure webhooks"| AGENT
+    T3 -->|"Consume billing status"| AGENT
+    T4 -->|"Consume invoice aging"| AGENT
+
+    AGENT -->|"Execute payment flows"| RZP
+    AGENT -->|"Publish recovery actions"| T5
+    AGENT -->|"Publish turnstile sync / lock"| T6
+
+    T6 -->|"Sync access control"| IOT
+```
+
+### 🛰️ Connecting to GymOS via Apache Kafka
+
+The agent operates in an **asynchronous, event-driven architecture (EDA)** decoupled from transactional database locks:
+
+#### 1. Inbound Kafka Topics (Subscribed / Consumed)
+* **`gymos.attendance.v1`** (`attendance.member.disengaged.v1`): Emitted by IoT turnstiles when rolling 14-day visit frequency drops $>65\%$ or when a member becomes physically inactive.
+* **`razorpay.payment.failed.v1`** (`payment.payment.failed.v1`): Ingested in real-time from Razorpay webhook workers containing failure error codes (`BANK_SERVER_UNAVAILABLE`, `INSUFFICIENT_FUNDS`, `MANDATE_EXPIRED`).
+* **`gymos.membership.status.v1`** (`membership.subscription.renewal_due.v1`): Emitted when a renewal is due, a grace period begins, or an Autopay schedule fires.
+* **`gymos.corporate.invoice.v1`** (`invoice.aging.updated.v1`): Emitted as B2B enterprise wellness accounts cross 15, 30, 45, or 60 days overdue.
+* **`notification.member.opt_out.v1`** (`notification.member.opt_out.v1`): Emitted when a member replies with `STOP`, `CANCEL`, or `UNSUBSCRIBE`.
+
+#### 2. Outbound Kafka Topics (Published / Produced)
+* **`gymos.recovery.action.v1`**: Broadcasts generated dynamic Razorpay payment links, scheduled mandate retry windows, and interactive WhatsApp negotiation payloads.
+* **`gymos.turnstile.access.v1`**: Bi-directional hardware sync—grants temporary grace-period workout access or triggers automated turnstile lockout for 60-day overdue corporate accounts.
+* **`gymos.audit.ledger.v1`**: Streams cryptographically chained SHA-256 audit records to enterprise SIEM compliance stores and data lakes.
+
+#### 3. Standardized Event Envelope
+All inter-service communication adheres to the [`GymOSEventEnvelope`](file:///Users/shubhamkumarrai/Desktop/Razorpay_Buildathon/gymos_core/event_bus.py#L19-L26) schema:
+```json
+{
+  "event_id": "c4b8e921-789a-4e2b-b98a-1a2b3c4d5e6f",
+  "event_type": "attendance.member.disengaged.v1",
+  "occurred_at": "2026-09-04T20:30:00+05:30",
+  "producer": "gymos-iot-attendance",
+  "tenant_id": "gym_ironpeak_blr_001",
+  "payload": {
+    "member_id": "mem_blr_4091",
+    "days_since_last_checkin": 14,
+    "attendance_drop_pct": 85.0
+  }
+}
+```
+
+---
+
 ## ⚡ Core Technical Innovations
 
 ### 1. 🤖 5-Agent Autonomous Swarm Architecture
