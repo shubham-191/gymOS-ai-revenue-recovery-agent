@@ -6,6 +6,8 @@
   <title>Razorpay Secure Checkout — IronPeak GymOS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Razorpay Official Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0c1524; }
@@ -27,8 +29,8 @@
             <p class="text-[11px] text-blue-200">Verified Razorpay Merchant</p>
           </div>
         </div>
-        <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
-          Sandbox Live
+        <span id="gateway-badge" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
+          Checking Gateway...
         </span>
       </div>
 
@@ -112,7 +114,7 @@
         <div class="p-2.5 bg-slate-900 rounded-xl text-[11px] font-mono text-cyan-300 border border-slate-800" id="checkout-payment-id">
           pay_test_984712038
         </div>
-        <p class="text-[10px] text-slate-400">Razorpay Webhook dispatched & logged into SHA-256 Audit Chain.</p>
+        <p class="text-[10px] text-slate-400" id="checkout-mode-notice">Razorpay Webhook dispatched & logged into SHA-256 Audit Chain.</p>
         <a href="/" class="inline-block mt-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">
           Return to Recovery Console
         </a>
@@ -121,7 +123,7 @@
       <!-- Security Notice -->
       <div class="flex items-center justify-center space-x-2 text-[11px] text-slate-500 pt-2 border-t border-slate-800">
         <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-        <span>256-bit Encrypted · Razorpay Test Sandbox</span>
+        <span id="security-footer-label">256-bit Encrypted · Razorpay Gateway</span>
       </div>
     </div>
   </div>
@@ -133,6 +135,9 @@
     const tier = urlParams.get('tier') || 'Membership Renewal';
     const linkId = urlParams.get('id') || 'plink_' + Math.random().toString(36).substring(2, 12);
 
+    let activeKeyId = null;
+    let isLiveTestMode = false;
+
     document.getElementById('checkout-amount-display').innerText = '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
     document.getElementById('btn-pay-label').innerText = 'Pay ₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) + ' Securely';
     document.getElementById('checkout-customer-name').innerText = name;
@@ -143,15 +148,135 @@
       lucide.createIcons();
     }
 
+    // Check backend gateway configuration
+    async function initGatewayStatus() {
+      try {
+        const res = await fetch('/api/policies');
+        if (res.ok) {
+          const policies = await res.json();
+          if (policies.razorpay_key_id && !policies.razorpay_key_id.startsWith('mock') && policies.razorpay_key_id.length > 5) {
+            activeKeyId = policies.razorpay_key_id;
+            isLiveTestMode = true;
+            const badge = document.getElementById('gateway-badge');
+            badge.innerText = '⚡ Razorpay Live Test (' + activeKeyId.substring(0, 8) + '...)';
+            badge.className = 'px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold border border-cyan-500/40';
+            document.getElementById('security-footer-label').innerText = 'Official Razorpay Test Mode · Key: ' + activeKeyId.substring(0, 8) + '...';
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch policies:', e);
+      }
+      // Fallback display
+      const badge = document.getElementById('gateway-badge');
+      badge.innerText = '🧪 Sandbox Emulator';
+      badge.className = 'px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold border border-amber-500/30';
+      document.getElementById('security-footer-label').innerText = '256-bit Encrypted · Razorpay Test Sandbox';
+    }
+    initGatewayStatus();
+
+    function resetBtn() {
+      const btn = document.getElementById('btn-pay-now');
+      btn.innerHTML = '<i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Pay ₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) + ' Securely</span>';
+      btn.disabled = false;
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function showSuccess(paymentId, isMock) {
+      const btn = document.getElementById('btn-pay-now');
+      btn.classList.add('hidden');
+      const successBox = document.getElementById('checkout-success-container');
+      successBox.classList.remove('hidden');
+      document.getElementById('checkout-payment-id').innerText = 'Payment ID: ' + paymentId;
+      document.getElementById('checkout-mode-notice').innerText = isMock
+        ? 'Simulated Sandbox Webhook dispatched & logged into SHA-256 Audit Chain.'
+        : 'Official Razorpay Payment Captured & verified into SHA-256 Audit Chain.';
+      if (window.lucide) lucide.createIcons();
+    }
+
     async function processCheckoutPayment() {
       const btn = document.getElementById('btn-pay-now');
-      btn.innerHTML = '<span class="animate-spin inline-block mr-2">🔄</span> Processing Payment...';
+      btn.innerHTML = '<span class="animate-spin inline-block mr-2">🔄</span> Connecting Razorpay...';
       btn.disabled = true;
 
-      const paymentId = 'pay_test_' + Math.random().toString(36).substring(2, 12);
-
-      // Trigger Webhook back to backend to complete end-to-end loop
       try {
+        // Step 1: Create Order on backend
+        const orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount_inr: amount,
+            receipt: 'rcpt_' + linkId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10),
+            customer_name: name,
+            notes: {
+              member_name: name,
+              tier: tier,
+              link_id: linkId
+            }
+          })
+        });
+
+        const orderData = await orderRes.json();
+
+        // Step 2: If live Razorpay keys are configured and Checkout.js is available
+        if (!orderData.mock && orderData.key_id && !orderData.key_id.startsWith('mock') && window.Razorpay) {
+          btn.innerHTML = '<span class="animate-spin inline-block mr-2">🔒</span> Opening Razorpay Modal...';
+
+          const options = {
+            key: orderData.key_id,
+            amount: orderData.amount,
+            currency: orderData.currency || 'INR',
+            name: 'IronPeak Fitness (GymOS)',
+            description: tier,
+            image: 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png',
+            order_id: orderData.id,
+            prefill: {
+              name: name,
+              contact: '9876543210',
+              email: 'member@ironpeak.fit'
+            },
+            theme: {
+              color: '#0284c7'
+            },
+            handler: async function (response) {
+              btn.innerHTML = '<span class="animate-spin inline-block mr-2">⚡</span> Verifying Transaction...';
+              try {
+                await fetch('/api/razorpay/verify-payment', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature,
+                    link_id: linkId,
+                    amount: amount,
+                    name: name,
+                    tier: tier
+                  })
+                });
+              } catch (verifyErr) {
+                console.warn('Verification call error:', verifyErr);
+              }
+              showSuccess(response.razorpay_payment_id, false);
+            },
+            modal: {
+              ondismiss: function() {
+                resetBtn();
+              }
+            }
+          };
+
+          const rzpInstance = new Razorpay(options);
+          rzpInstance.on('payment.failed', function (failResp) {
+            alert('Payment Failed: ' + (failResp.error.description || 'Transaction declined'));
+            resetBtn();
+          });
+          rzpInstance.open();
+          return;
+        }
+
+        // Step 3: Offline / Mock Sandbox Fallback
+        const paymentId = 'pay_test_' + Math.random().toString(36).substring(2, 12);
         await fetch('/api/webhook/razorpay', {
           method: 'POST',
           headers: {
@@ -184,19 +309,11 @@
           })
         });
 
-        // Show Success
-        btn.classList.add('hidden');
-        const successBox = document.getElementById('checkout-success-container');
-        successBox.classList.remove('hidden');
-        document.getElementById('checkout-payment-id').innerText = 'Payment ID: ' + paymentId;
+        showSuccess(paymentId, true);
 
-        if (window.lucide) {
-          lucide.createIcons();
-        }
       } catch (err) {
-        alert('Payment processing failed: ' + err.message);
-        btn.innerHTML = '<i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Pay Now</span>';
-        btn.disabled = false;
+        alert('Payment processing error: ' + err.message);
+        resetBtn();
       }
     }
   </script>

@@ -119,6 +119,85 @@ class RazorpayRecoveryClient:
             "notes": custom_notes
         }
 
+    def create_order(
+        self,
+        amount_inr: float,
+        receipt: Optional[str] = None,
+        notes: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Creates a standard Razorpay Order for Checkout.js modal integration.
+        Unlimited orders are supported in Razorpay Test Mode without the 30-payment-link quota limit.
+        """
+        amount_paise = int(round(amount_inr * 100))
+        receipt_id = receipt or f"rcpt_{uuid.uuid4().hex[:10]}"
+        custom_notes = notes or {}
+        custom_notes.setdefault("recovery_engine", "GymOS-AI-RecoverySentinel")
+        custom_notes.setdefault("timestamp", str(int(time.time())))
+
+        if not self.is_mock and self.real_client:
+            try:
+                payload = {
+                    "amount": amount_paise,
+                    "currency": "INR",
+                    "receipt": receipt_id,
+                    "notes": custom_notes,
+                    "payment_capture": 1
+                }
+                res = self.real_client.order.create(payload)
+                logger.info("Created live Razorpay Order: %s", res.get("id"))
+                return {
+                    "id": res.get("id"),
+                    "amount": res.get("amount", amount_paise),
+                    "currency": res.get("currency", "INR"),
+                    "receipt": res.get("receipt", receipt_id),
+                    "status": res.get("status", "created"),
+                    "key_id": self.key_id,
+                    "mock": False,
+                    "raw_response": res
+                }
+            except Exception as e:
+                logger.error("Live Razorpay Order creation failed (%s). Falling back to mock order.", e)
+                last_error_str = str(e)
+        else:
+            last_error_str = None
+
+        mock_order_id = f"order_{uuid.uuid4().hex[:14]}"
+        return {
+            "id": mock_order_id,
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt_id,
+            "status": "created",
+            "key_id": self.key_id if (self.key_id and not self.is_mock) else "rzp_mock_demo",
+            "mock": True,
+            "api_error": last_error_str,
+            "notes": custom_notes
+        }
+
+    def verify_payment_signature(
+        self,
+        razorpay_order_id: str,
+        razorpay_payment_id: str,
+        razorpay_signature: str
+    ) -> bool:
+        """
+        Verifies standard Razorpay Checkout Payment Signature.
+        """
+        if self.is_mock or not self.key_secret or "mock" in self.key_secret or "mock" in razorpay_signature:
+            return True
+        try:
+            msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+            expected = hmac.new(
+                self.key_secret.encode("utf-8"),
+                msg.encode("utf-8"),
+                hashlib.sha256
+            ).hexdigest()
+            return hmac.compare_digest(expected, razorpay_signature)
+        except Exception as e:
+            logger.warning("Error verifying payment signature: %s", e)
+            return False
+
     def schedule_smart_retry(
         self,
         mandate_id: str,

@@ -306,3 +306,81 @@ async def razorpay_webhook(
         raw_body=body_str
     )
     return result
+
+
+class CreateOrderRequest(BaseModel):
+    amount_inr: float
+    receipt: Optional[str] = None
+    notes: Optional[Dict[str, str]] = None
+    customer_name: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_phone: Optional[str] = None
+
+
+@app.post("/api/razorpay/create-order")
+async def create_razorpay_order(req: CreateOrderRequest):
+    try:
+        notes = req.notes or {}
+        if req.customer_name:
+            notes["customer_name"] = req.customer_name
+        if req.customer_email:
+            notes["customer_email"] = req.customer_email
+        if req.customer_phone:
+            notes["customer_phone"] = req.customer_phone
+
+        order_res = rzp_client.create_order(
+            amount_inr=req.amount_inr,
+            receipt=req.receipt,
+            notes=notes
+        )
+        return order_res
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_payment_id: str
+    razorpay_order_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
+    link_id: Optional[str] = None
+    amount: float
+    name: Optional[str] = "Member"
+    tier: Optional[str] = "Membership Renewal"
+
+
+@app.post("/api/razorpay/verify-payment")
+async def verify_razorpay_payment(req: VerifyPaymentRequest):
+    try:
+        # Verify signature if live order
+        is_valid = True
+        if req.razorpay_order_id and req.razorpay_signature and not rzp_client.is_mock:
+            is_valid = rzp_client.verify_payment_signature(
+                razorpay_order_id=req.razorpay_order_id,
+                razorpay_payment_id=req.razorpay_payment_id,
+                razorpay_signature=req.razorpay_signature
+            )
+
+        # Log into SHA-256 Audit Trail
+        audit_entry = audit_logger.log_event(
+            event_type="PAYMENT_CAPTURED",
+            member_id=req.link_id or "UNKNOWN",
+            action="RAZORPAY_CHECKOUT_SUCCESS",
+            status="SUCCESS" if is_valid else "SIGNATURE_VERIFICATION_SKIPPED",
+            details={
+                "payment_id": req.razorpay_payment_id,
+                "order_id": req.razorpay_order_id,
+                "amount_inr": req.amount,
+                "customer_name": req.name,
+                "tier": req.tier,
+                "is_live_mode": not rzp_client.is_mock
+            }
+        )
+
+        return {
+            "status": "SUCCESS",
+            "payment_id": req.razorpay_payment_id,
+            "signature_valid": is_valid,
+            "audit_hash": audit_entry.event_hash
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

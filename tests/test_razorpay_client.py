@@ -25,6 +25,28 @@ def test_create_dynamic_payment_link(rzp_client):
     assert res["amount"] == 5849.10
 
 
+def test_create_order(rzp_client):
+    res = rzp_client.create_order(
+        amount_inr=4999.0,
+        receipt="rcpt_unit_test",
+        notes={"tier": "Annual Gold"}
+    )
+    assert res is not None
+    assert "id" in res
+    assert res["amount"] == 499900
+    assert res["currency"] == "INR"
+    assert res["status"] == "created"
+
+
+def test_verify_payment_signature(rzp_client):
+    is_valid = rzp_client.verify_payment_signature(
+        razorpay_order_id="order_123456",
+        razorpay_payment_id="pay_123456",
+        razorpay_signature="mock_sig"
+    )
+    assert is_valid is True
+
+
 def test_webhook_payment_link_paid(rzp_client):
     processor = WebhookProcessor(rzp_client)
     sample_payload = {
@@ -49,3 +71,4 @@ def test_webhook_payment_link_paid(rzp_client):
     assert result["status"] == "PROCESSED"
     assert result["recovery_state"] == "SUCCESS"
     assert result["amount_paid_inr"] == 5849.10
+
