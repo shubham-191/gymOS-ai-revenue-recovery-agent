@@ -35,7 +35,13 @@ function switchTab(tabId) {
     activeBtn.classList.add("border-blue-500", "text-blue-400");
   }
 
-  if (tabId === "tab-optimizer") {
+  if (tabId === "tab-chat") {
+    syncWhatsAppMockup(
+      document.getElementById("input-name")?.value,
+      document.getElementById("input-tier")?.value,
+      document.getElementById("input-amount")?.value
+    );
+  } else if (tabId === "tab-optimizer") {
     loadOptimizerRails();
   } else if (tabId === "tab-b2b") {
     loadB2BInvoices();
@@ -54,14 +60,28 @@ async function loadPresetScenarios() {
     const data = await res.json();
     globalScenarios = data.scenarios || [];
 
-    const select = document.getElementById("scenario-selector");
-    select.innerHTML = '<option value="">-- Load Sample Scenario --</option>';
+    const select1 = document.getElementById("scenario-selector");
+    const select2 = document.getElementById("chat-member-selector");
+
+    if (select1) select1.innerHTML = '<option value="">-- Load Sample Scenario --</option>';
+    if (select2) select2.innerHTML = '<option value="">-- Select Member to Chat --</option>';
 
     globalScenarios.forEach((s, idx) => {
-      const opt = document.createElement("option");
-      opt.value = idx;
-      opt.innerText = `[${s.scenario_id}] ${s.name} (${s.membership_tier}) - ${s.last_failure_code}`;
-      select.appendChild(opt);
+      const optText = `[${s.scenario_id}] ${s.name} (${s.membership_tier}) - ${s.last_failure_code}`;
+      
+      if (select1) {
+        const opt1 = document.createElement("option");
+        opt1.value = idx;
+        opt1.innerText = optText;
+        select1.appendChild(opt1);
+      }
+
+      if (select2) {
+        const opt2 = document.createElement("option");
+        opt2.value = idx;
+        opt2.innerText = `👤 ${s.name} (₹${s.membership_amount.toLocaleString()}) · ${s.membership_tier}`;
+        select2.appendChild(opt2);
+      }
     });
 
     if (globalScenarios.length > 0) {
@@ -87,7 +107,51 @@ function selectScenarioFromDropdown(indexStr) {
   document.getElementById("input-fails").value = s.consecutive_failed_attempts;
   document.getElementById("input-optout").checked = s.opted_out;
 
+  const chatSel = document.getElementById("chat-member-selector");
+  if (chatSel && chatSel.value !== indexStr) {
+    chatSel.value = indexStr;
+  }
+
+  const mainSel = document.getElementById("scenario-selector");
+  if (mainSel && mainSel.value !== indexStr) {
+    mainSel.value = indexStr;
+  }
+
   syncWhatsAppMockup(s.name, s.membership_tier, s.membership_amount);
+}
+
+function onChatMemberChange(indexStr) {
+  if (indexStr === "" || indexStr === undefined) return;
+  selectScenarioFromDropdown(indexStr);
+  resetWhatsAppConversation();
+}
+
+function resetWhatsAppConversation() {
+  const name = document.getElementById("input-name")?.value || "Rahul Sharma";
+  const firstName = name.split(" ")[0];
+  const amount = parseFloat(document.getElementById("input-amount")?.value) || 5849;
+  const tier = document.getElementById("input-tier")?.value || "Quarterly Pro";
+  const discountedAmt = Math.round(amount * 0.9);
+
+  const container = document.getElementById("chat-messages-container");
+  if (!container) return;
+
+  container.innerHTML = `
+    <!-- Initial AI Recovery Outreach Message -->
+    <div class="flex justify-start">
+      <div class="bg-[#202c33] text-slate-200 p-3.5 rounded-2xl rounded-tl-none max-w-md shadow-md space-y-2">
+        <p id="chat-initial-greeting">Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!</p>
+        <p>Aapke active return ke liye humne exclusive renewal link ready kiya hai:</p>
+        <div class="p-2.5 bg-[#111b21] rounded-xl border border-blue-500/30 text-cyan-300 font-mono text-[11px] flex justify-between items-center">
+          <span id="chat-initial-link-text">👉 /checkout?id=plink_init&amount=${discountedAmt}</span>
+          <a id="chat-initial-link-btn" href="/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(name)}&tier=${encodeURIComponent(tier)}" target="_blank" class="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-sans text-[10px]">Open Checkout</a>
+        </div>
+        <div class="text-[10px] text-slate-400 text-right">10:15 AM · ✓✓</div>
+      </div>
+    </div>
+  `;
+
+  syncWhatsAppMockup(name, tier, amount);
 }
 
 function syncWhatsAppMockup(name, tier, amount) {
@@ -95,10 +159,15 @@ function syncWhatsAppMockup(name, tier, amount) {
   const firstName = safeName.split(" ")[0];
   const safeTier = tier || "Quarterly Pro";
   const safeAmt = amount || 5849;
+  const discountedAmt = Math.round(safeAmt * 0.9);
   
   const greetEl = document.getElementById("chat-initial-greeting");
   if (greetEl) {
     greetEl.innerText = `Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!`;
+  }
+  const linkTextEl = document.getElementById("chat-initial-link-text");
+  if (linkTextEl) {
+    linkTextEl.innerText = `👉 /checkout?id=plink_init&amount=${discountedAmt}`;
   }
   const headerEl = document.getElementById("chat-header-member");
   if (headerEl) {
@@ -106,7 +175,7 @@ function syncWhatsAppMockup(name, tier, amount) {
   }
   const linkBtn = document.getElementById("chat-initial-link-btn");
   if (linkBtn) {
-    linkBtn.href = `/checkout?id=plink_init&amount=${safeAmt}&name=${encodeURIComponent(safeName)}&tier=${encodeURIComponent(safeTier)}`;
+    linkBtn.href = `/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(safeName)}&tier=${encodeURIComponent(safeTier)}`;
   }
 }
 

@@ -504,6 +504,16 @@
             <p class="text-xs text-slate-400 mt-1">Select or type real customer objections to watch the AI negotiate, offer plan freezes, downgrades, or Razorpay links.</p>
           </div>
 
+          <!-- Active Member Selector for Chat -->
+          <div class="space-y-1.5 p-3.5 bg-slate-900/80 rounded-xl border border-slate-800">
+            <label class="block text-xs font-semibold text-slate-300 flex justify-between items-center">
+              <span>Chatting With Member</span>
+              <button onclick="resetWhatsAppConversation()" class="text-[10px] text-blue-400 hover:text-blue-300 font-normal underline">↺ Reset Chat</button>
+            </label>
+            <select id="chat-member-selector" onchange="onChatMemberChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </select>
+          </div>
+
           <!-- Quick Objection Pills -->
           <div class="space-y-2">
             <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Quick Test Objections</span>
