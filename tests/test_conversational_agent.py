@@ -66,3 +66,25 @@ def test_chat_bounded_discount_request(chat_agent, sample_member):
     assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
     assert res["action_executed"]["discount_percent"] <= 15.0
     assert res["payment_link"] is not None
+
+
+def test_continuous_subscription_cycle_accounting():
+    from gymos_core.subscription_lifecycle import SubscriptionLifecycleManager
+    
+    # Member plan expired on 2026-09-01
+    # Member pays on 2026-09-06 (5 days delay after using 5 days of grace workouts)
+    renewal_res = SubscriptionLifecycleManager.execute_settled_renewal(
+        member_id="mem_test_accounting",
+        plan_expiry_date="2026-09-01",
+        plan_duration_days=30,
+        payment_date="2026-09-06"
+    )
+    
+    # Total plan is 30 days
+    # 5 days grace consumed
+    # New expiry date = 2026-09-01 + 30 days = 2026-10-01
+    # Effective remaining days from Sep 6 = 25 days!
+    assert renewal_res["days_grace_consumed"] == 5
+    assert renewal_res["effective_days_remaining_from_today"] == 25
+    assert renewal_res["new_membership_expiry_date"] == "2026-10-01"
+    assert renewal_res["accounting_rule"] == "CONTINUOUS_CYCLE_ANCHORING"

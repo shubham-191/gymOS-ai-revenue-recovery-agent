@@ -59,3 +59,62 @@ class SubscriptionLifecycleManager:
             "grace_period_active": True,
             "message": f"Payment deferred to {promised_date}. Workout access remains active in grace period."
         }
+
+    @staticmethod
+    def execute_settled_renewal(
+        member_id: str,
+        plan_expiry_date: str,
+        plan_duration_days: int = 30,
+        payment_date: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Continuous Subscription Cycle Accounting:
+        If a payment is delayed by X days (e.g. 5 days grace period used by the member),
+        the new plan expiry date anchors to the previous expiry date:
+        New Expiry Date = Previous Expiry Date + Plan Duration Days.
+        
+        This ensures that:
+        - 5 days consumed during grace period are accounted for.
+        - Effective days remaining from the payment date = Plan Duration - Days Delayed = 30 - 5 = 25 days.
+        - The gym gets paid for all 30 days without giving 5 days of free workouts!
+        """
+        now_ist = datetime.now(IST)
+        pay_dt = datetime.strptime(payment_date, "%Y-%m-%d").replace(tzinfo=IST) if payment_date else now_ist
+        
+        try:
+            prev_expiry_dt = datetime.strptime(plan_expiry_date, "%Y-%m-%d").replace(tzinfo=IST)
+        except Exception:
+            prev_expiry_dt = now_ist
+
+        # Calculate days delayed
+        days_delayed = max(0, (pay_dt.date() - prev_expiry_dt.date()).days)
+        
+        # Anchor to previous expiry date
+        new_expiry_dt = prev_expiry_dt + timedelta(days=plan_duration_days)
+        
+        # If payment was delayed longer than the entire plan duration (e.g. 40 days overdue), reset from payment date
+        if new_expiry_dt.date() <= pay_dt.date():
+            new_expiry_dt = pay_dt + timedelta(days=plan_duration_days)
+            effective_days_remaining = plan_duration_days
+        else:
+            effective_days_remaining = (new_expiry_dt.date() - pay_dt.date()).days
+
+        new_expiry_str = new_expiry_dt.strftime("%Y-%m-%d")
+        
+        logger.info(
+            "Settled renewal for %s: PrevExpiry=%s, PayDate=%s, DaysGraceUsed=%d, RemainingDays=%d, NewExpiry=%s",
+            member_id, plan_expiry_date, pay_dt.strftime("%Y-%m-%d"), days_delayed, effective_days_remaining, new_expiry_str
+        )
+        
+        return {
+            "action": "SETTLED_RENEWAL_CYCLE",
+            "member_id": member_id,
+            "previous_expiry_date": plan_expiry_date,
+            "payment_settled_date": pay_dt.strftime("%Y-%m-%d"),
+            "days_grace_consumed": days_delayed,
+            "total_plan_duration_days": plan_duration_days,
+            "effective_days_remaining_from_today": effective_days_remaining,
+            "new_membership_expiry_date": new_expiry_str,
+            "accounting_rule": "CONTINUOUS_CYCLE_ANCHORING",
+            "message": f"Membership renewed until {new_expiry_str}. ({days_delayed} days grace period consumed, {effective_days_remaining} days remaining in this billing cycle)."
+        }
