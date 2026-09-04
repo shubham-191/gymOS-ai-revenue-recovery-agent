@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadPresetScenarios();
   await refreshAuditTrail();
   initCharts();
+
+  const nameInput = document.getElementById("input-name");
+  if (nameInput) {
+    nameInput.addEventListener("input", (e) => {
+      syncWhatsAppMockup(e.target.value, document.getElementById("input-tier")?.value, document.getElementById("input-amount")?.value);
+    });
+  }
 });
 
 function switchTab(tabId) {
@@ -79,6 +86,28 @@ function selectScenarioFromDropdown(indexStr) {
   document.getElementById("input-failure-code").value = s.last_failure_code;
   document.getElementById("input-fails").value = s.consecutive_failed_attempts;
   document.getElementById("input-optout").checked = s.opted_out;
+
+  syncWhatsAppMockup(s.name, s.membership_tier, s.membership_amount);
+}
+
+function syncWhatsAppMockup(name, tier, amount) {
+  const safeName = name || "Rahul Sharma";
+  const firstName = safeName.split(" ")[0];
+  const safeTier = tier || "Quarterly Pro";
+  const safeAmt = amount || 5849;
+  
+  const greetEl = document.getElementById("chat-initial-greeting");
+  if (greetEl) {
+    greetEl.innerText = `Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!`;
+  }
+  const headerEl = document.getElementById("chat-header-member");
+  if (headerEl) {
+    headerEl.innerText = `Chat with ${safeName} · Official Verified Account`;
+  }
+  const linkBtn = document.getElementById("chat-initial-link-btn");
+  if (linkBtn) {
+    linkBtn.href = `/checkout?id=plink_init&amount=${safeAmt}&name=${encodeURIComponent(safeName)}&tier=${encodeURIComponent(safeTier)}`;
+  }
 }
 
 function loadRandomScenario() {
