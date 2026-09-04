@@ -182,3 +182,35 @@ def test_continuous_subscription_cycle_accounting():
     assert renewal_res["effective_days_remaining_from_today"] == 25
     assert renewal_res["new_membership_expiry_date"] == "2026-10-01"
     assert renewal_res["accounting_rule"] == "CONTINUOUS_CYCLE_ANCHORING"
+
+
+def test_chat_at_risk_disengaged_capped_at_custom_policy_5_percent():
+    from agent.policy_guardrails import PolicyGuardrailEngine
+    at_risk_member = MemberProfile(
+        member_id="mem_at_risk_5pct",
+        name="Vikram Rao",
+        phone="+919876543210",
+        email="vikram@example.com",
+        membership_tier=MembershipTier.QUARTERLY_PRO,
+        membership_amount=6000.0,
+        plan_start_date="2026-01-01",
+        plan_expiry_date="2026-09-01",
+        days_since_last_checkin=25,
+        actual_visits_last_30_days=1  # Disengaged at risk
+    )
+    # Merchant sets max discount cap to 5.0%
+    guardrail_5 = PolicyGuardrailEngine(max_discount_percentage=5.0)
+    agent = ConversationalRecoveryAgent(guardrail_engine=guardrail_5)
+
+    # General request: should NOT exceed 5%
+    res = agent.handle_incoming_message(at_risk_member, "Any discount if I renew today?")
+    assert res["intent"] == UserIntentType.REQUEST_DISCOUNT
+    assert res["action_executed"]["discount_percent"] == 5.0
+    assert "5%" in res["reply_message"]
+
+    # Explicit 15% request: should clamp strictly to 5%
+    res_clamped = agent.handle_incoming_message(at_risk_member, "Can I get 15% discount?")
+    assert res_clamped["action_executed"]["discount_percent"] == 5.0
+    assert res_clamped["action_executed"]["was_clamped_by_guardrail"] is True
+    assert "5%" in res_clamped["reply_message"]
+

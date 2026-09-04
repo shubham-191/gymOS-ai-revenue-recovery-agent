@@ -141,8 +141,8 @@ class ConversationalRecoveryAgent:
 
             # 2. Super Regular / Power User Check (Zero Churn Risk -> Zero Cash Discount!)
             is_super_regular = (
-                member.days_since_last_checkin <= 5 
-                and (member.actual_visits_last_30_days >= 10 or member.baseline_visits_per_week >= 3.0)
+                member.days_since_last_checkin <= 7 
+                and member.actual_visits_last_30_days >= 8
             )
 
             if is_super_regular:
@@ -199,8 +199,8 @@ class ConversationalRecoveryAgent:
             else:
                 # User asked generally: "any discount?", "best price", "kam karo"
                 # Check engagement & churn risk:
-                is_moderate_member = (member.days_since_last_checkin <= 7 and member.actual_visits_last_30_days >= 5)
-                is_at_risk_churn = (member.days_since_last_checkin > 14 or member.actual_visits_last_30_days <= 3)
+                is_moderate_member = (member.days_since_last_checkin <= 14 and member.actual_visits_last_30_days >= 4)
+                is_at_risk_churn = (member.days_since_last_checkin > 14 or member.actual_visits_last_30_days < 4)
 
                 if is_moderate_member:
                     # Moderate attendee asking casually -> offer modest starter token (e.g. 5%), not max margin!
@@ -210,7 +210,7 @@ class ConversationalRecoveryAgent:
                     discount_pct = min(10.0, max_policy_discount)
                 else:
                     # Standard member baseline
-                    discount_pct = min(7.5, max_policy_discount)
+                    discount_pct = min(5.0, max_policy_discount)
 
             # Strict guardrail policy ceiling enforcement
             discount_pct = max(0.0, min(discount_pct, max_policy_discount))

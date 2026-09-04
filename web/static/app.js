@@ -147,7 +147,6 @@ function resetWhatsAppConversation() {
   const firstName = name.split(" ")[0];
   const amount = parseFloat(document.getElementById("input-amount")?.value) || 5849;
   const tier = document.getElementById("input-tier")?.value || "Quarterly Pro";
-  const discountedAmt = Math.round(amount * 0.9);
 
   const container = document.getElementById("chat-messages-container");
   if (!container) return;
@@ -169,8 +168,8 @@ function resetWhatsAppConversation() {
             </div>
             <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-950 text-cyan-300 border border-blue-500/40">Active 48h</span>
           </div>
-          <a id="chat-initial-link-btn" href="/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(name)}&tier=${encodeURIComponent(tier)}" target="_blank" class="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow transition-all duration-150">
-            <span>💳 Open Checkout (UPI / Cards)</span>
+          <a id="chat-initial-link-btn" href="/checkout?id=plink_init&amount=${amount}&name=${encodeURIComponent(name)}&tier=${encodeURIComponent(tier)}" target="_blank" class="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow transition-all duration-150">
+            <span>💳 Open Checkout (₹${amount.toLocaleString('en-IN')})</span>
             <span>➔</span>
           </a>
         </div>
@@ -186,8 +185,7 @@ function syncWhatsAppMockup(name, tier, amount) {
   const safeName = name || "Rahul Sharma";
   const firstName = safeName.split(" ")[0];
   const safeTier = tier || "Quarterly Pro";
-  const safeAmt = amount || 5849;
-  const discountedAmt = Math.round(safeAmt * 0.9);
+  const safeAmt = parseFloat(amount) || 5849;
   
   const greetEl = document.getElementById("chat-initial-greeting");
   if (greetEl) {
@@ -203,7 +201,8 @@ function syncWhatsAppMockup(name, tier, amount) {
   }
   const linkBtn = document.getElementById("chat-initial-link-btn");
   if (linkBtn) {
-    linkBtn.href = `/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(safeName)}&tier=${encodeURIComponent(safeTier)}`;
+    linkBtn.href = `/checkout?id=plink_init&amount=${safeAmt}&name=${encodeURIComponent(safeName)}&tier=${encodeURIComponent(safeTier)}`;
+    linkBtn.innerHTML = `<span>💳 Open Checkout (₹${safeAmt.toLocaleString('en-IN')})</span> <span>➔</span>`;
   }
 }
 
@@ -493,6 +492,61 @@ async function loadPolicies() {
   }
 }
 
+let policySyncTimer = null;
+
+function onDiscountSliderChange(val) {
+  const num = parseFloat(val) || 0;
+  const valEl = document.getElementById("val-discount");
+  if (valEl) valEl.innerText = `${num}.0%`;
+  scheduleSilentPolicySave();
+}
+
+function onTouchesSliderChange(val) {
+  const num = parseInt(val) || 3;
+  const valEl = document.getElementById("val-touches");
+  if (valEl) valEl.innerText = `${num} touches`;
+  scheduleSilentPolicySave();
+}
+
+function onVipSliderChange(val) {
+  const num = parseFloat(val) || 50000;
+  const valEl = document.getElementById("val-vip");
+  if (valEl) valEl.innerText = `₹${Number(num).toLocaleString('en-IN')}`;
+  scheduleSilentPolicySave();
+}
+
+function onOptoutToggleChange(checked) {
+  scheduleSilentPolicySave();
+}
+
+function scheduleSilentPolicySave() {
+  if (policySyncTimer) clearTimeout(policySyncTimer);
+  policySyncTimer = setTimeout(() => {
+    savePoliciesSilently();
+  }, 200);
+}
+
+async function savePoliciesSilently() {
+  const payload = {
+    max_discount_percentage: parseFloat(document.getElementById("slider-discount")?.value || 0),
+    max_touches: parseInt(document.getElementById("slider-touches")?.value || 3),
+    strict_opt_out: document.getElementById("toggle-optout")?.checked ?? true,
+    vip_threshold_inr: parseFloat(document.getElementById("slider-vip")?.value || 50000),
+    razorpay_key_id: document.getElementById("input-rzp-key-id")?.value.trim(),
+    razorpay_key_secret: document.getElementById("input-rzp-key-secret")?.value.trim()
+  };
+
+  try {
+    await fetch("/api/policies", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.warn("Silent policy update warning:", err);
+  }
+}
+
 async function savePolicies() {
   const payload = {
     max_discount_percentage: parseFloat(document.getElementById("slider-discount").value),
@@ -510,7 +564,7 @@ async function savePolicies() {
       body: JSON.stringify(payload)
     });
     const result = await res.json();
-    alert(`✅ Policy Guardrails Successfully Updated!\n• Max Discount: ${payload.max_discount_percentage}%\n• Max Touches: ${payload.max_touches}\n• Strict Opt-Out: ${payload.strict_opt_out}\n• VIP Threshold: ₹${payload.vip_threshold_inr}`);
+    alert(`✅ Policy Guardrails Successfully Updated & Active!\n• Max Discount: ${payload.max_discount_percentage}%\n• Max Touches: ${payload.max_touches}\n• Strict Opt-Out: ${payload.strict_opt_out}\n• VIP Threshold: ₹${payload.vip_threshold_inr}`);
   } catch (err) {
     alert("Failed to save policies: " + err.message);
   }
@@ -558,25 +612,31 @@ async function sendChatMessage() {
   container.appendChild(typingIndicator);
   container.scrollTop = container.scrollHeight;
 
-  // Current selected member profile
+  // Current dynamically selected member profile from UI form/scenario
+  const visitsVal = document.getElementById("input-visits")?.value;
+  const daysInactiveVal = document.getElementById("input-days-inactive")?.value;
+  const failsVal = document.getElementById("input-fails")?.value;
+  const optOutVal = document.getElementById("input-optout")?.checked;
+  const failureCodeVal = document.getElementById("input-failure-code")?.value;
+
   const member = {
-    member_id: "mem_blr_4091",
-    name: document.getElementById("input-name").value || "Rahul Sharma",
-    phone: document.getElementById("input-phone").value || "+919876543210",
-    email: "rahul.sharma@example.com",
+    member_id: "mem_sim_" + (document.getElementById("chat-member-selector")?.value || "user"),
+    name: document.getElementById("input-name")?.value || "Rahul Sharma",
+    phone: document.getElementById("input-phone")?.value || "+919876543210",
+    email: "member@example.com",
     language_preference: "hinglish",
-    membership_tier: document.getElementById("input-tier").value || "QUARTERLY_PRO",
-    membership_amount: parseFloat(document.getElementById("input-amount").value) || 6499.0,
+    membership_tier: document.getElementById("input-tier")?.value || "Quarterly Pro",
+    membership_amount: parseFloat(document.getElementById("input-amount")?.value) || 5849.0,
     plan_start_date: "2026-06-01",
     plan_expiry_date: "2026-09-01",
     baseline_visits_per_week: 4.0,
-    actual_visits_last_30_days: 2,
-    days_since_last_checkin: 18,
+    actual_visits_last_30_days: (visitsVal !== undefined && visitsVal !== "") ? parseInt(visitsVal) : 2,
+    days_since_last_checkin: (daysInactiveVal !== undefined && daysInactiveVal !== "") ? parseInt(daysInactiveVal) : 18,
     lifetime_paid_inr: 15000.0,
     previous_payment_method: "UPI_AUTOPAY",
-    consecutive_failed_attempts: 1,
-    opted_out: false,
-    last_failure_code: "NONE"
+    consecutive_failed_attempts: (failsVal !== undefined && failsVal !== "") ? parseInt(failsVal) : 0,
+    opted_out: !!optOutVal,
+    last_failure_code: failureCodeVal || "NONE"
   };
 
   try {
