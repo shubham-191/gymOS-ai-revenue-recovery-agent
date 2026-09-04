@@ -132,6 +132,7 @@ class RecoveryOrchestrator:
             )
             razorpay_link = link_res.get("short_url")
             razorpay_order_id = link_res.get("id")
+            display_url = link_res.get("display_url") or (razorpay_link if razorpay_link and razorpay_link.startswith("http") else f"https://rzp.io/i/{razorpay_order_id}")
 
             # Generate Context-Aware Copy
             recovery_copy = RecoveryCopyGenerator.generate_message(
@@ -139,13 +140,14 @@ class RecoveryOrchestrator:
                 root_cause=root_cause,
                 discount_percent=authorized_discount,
                 final_amount_inr=discounted_amount,
-                payment_url=razorpay_link or "https://rzp.io/l/demo"
+                payment_url=display_url or "https://rzp.io/l/demo"
             )
 
             action_payload = {
                 "action": "PAYMENT_LINK_DISPATCH",
                 "razorpay_link_id": razorpay_order_id,
                 "payment_url": razorpay_link,
+                "display_url": display_url,
                 "channel": preferred_channel,
                 "discount_percentage": authorized_discount
             }

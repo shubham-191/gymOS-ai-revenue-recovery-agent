@@ -157,9 +157,21 @@ function resetWhatsAppConversation() {
       <div class="bg-[#202c33] text-slate-200 p-3.5 rounded-2xl rounded-tl-none max-w-md shadow-md space-y-2">
         <p id="chat-initial-greeting">Arre ${firstName} bhai! 💪 IronPeak Gym mein aapko miss kar rahe hain. Goals break nahi hone chahiye!</p>
         <p>Aapke active return ke liye humne exclusive renewal link ready kiya hai:</p>
-        <div class="p-2.5 bg-[#111b21] rounded-xl border border-blue-500/30 text-cyan-300 font-mono text-[11px] flex justify-between items-center">
-          <span id="chat-initial-link-text">👉 /checkout?id=plink_init&amount=${discountedAmt}</span>
-          <a id="chat-initial-link-btn" href="/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(name)}&tier=${encodeURIComponent(tier)}" target="_blank" class="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-sans text-[10px]">Open Checkout</a>
+        <div class="mt-2 p-3 bg-[#111b21] rounded-xl border border-blue-500/30 text-slate-200 shadow-lg space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-5 h-5 rounded bg-blue-500/20 text-cyan-400 font-black text-[10px] flex items-center justify-center border border-blue-500/40">₹</div>
+              <div>
+                <div class="text-[11px] font-bold text-white tracking-wide">Razorpay Instant Checkout</div>
+                <div id="chat-initial-link-text" class="text-[9px] text-cyan-400 font-mono">https://rzp.io/i/plink_init</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-blue-950 text-cyan-300 border border-blue-500/40">Active 48h</span>
+          </div>
+          <a id="chat-initial-link-btn" href="/checkout?id=plink_init&amount=${discountedAmt}&name=${encodeURIComponent(name)}&tier=${encodeURIComponent(tier)}" target="_blank" class="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow transition-all duration-150">
+            <span>💳 Open Checkout (UPI / Cards)</span>
+            <span>➔</span>
+          </a>
         </div>
         <div class="text-[10px] text-slate-400 text-right">10:15 AM · ✓✓</div>
       </div>
@@ -182,7 +194,7 @@ function syncWhatsAppMockup(name, tier, amount) {
   }
   const linkTextEl = document.getElementById("chat-initial-link-text");
   if (linkTextEl) {
-    linkTextEl.innerText = `👉 /checkout?id=plink_init&amount=${discountedAmt}`;
+    linkTextEl.innerText = `https://rzp.io/i/plink_init_${safeName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
   }
   const headerEl = document.getElementById("chat-header-member");
   if (headerEl) {
@@ -541,10 +553,24 @@ async function sendChatMessage() {
     
     let linkBlock = "";
     if (result.payment_link) {
+      const displayUrl = (result.action_executed && result.action_executed.display_url) || (result.payment_link.startsWith("http") ? result.payment_link : `https://rzp.io/i/${result.payment_link.split('id=')[1]?.split('&')[0] || 'plink_pay'}`);
+      
       linkBlock = `
-        <div class="p-2.5 bg-[#111b21] rounded-xl border border-emerald-500/30 text-emerald-300 font-mono text-[11px] flex justify-between items-center">
-          <span>${result.payment_link}</span>
-          <a href="${result.payment_link}" target="_blank" class="px-2 py-0.5 rounded bg-emerald-600 text-white font-sans text-[10px]">Open</a>
+        <div class="mt-2.5 p-3 bg-[#111b21] rounded-xl border border-emerald-500/30 text-slate-200 shadow-lg space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-5 h-5 rounded bg-emerald-500/20 text-emerald-400 font-black text-[10px] flex items-center justify-center border border-emerald-500/40">₹</div>
+              <div>
+                <div class="text-[11px] font-bold text-white tracking-wide">Razorpay Instant Checkout</div>
+                <div class="text-[9px] text-emerald-400 font-mono">${escapeHtml(displayUrl)}</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/40">Active 24h</span>
+          </div>
+          <a href="${result.payment_link}" target="_blank" class="w-full flex items-center justify-center space-x-1.5 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow transition-all duration-150">
+            <span>💳 Pay Now (UPI / Cards)</span>
+            <span>➔</span>
+          </a>
         </div>
       `;
     }

@@ -76,12 +76,13 @@ class ConversationalRecoveryAgent:
                 description=f"GymOS Downgrade - Monthly Basic ({member.name})"
             )
             payment_link = link_res.get("short_url")
-            action_executed = {**downgrade_res, "razorpay_link": payment_link}
+            display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{link_res.get('id', 'pay_now')}")
+            action_executed = {**downgrade_res, "razorpay_link": payment_link, "display_url": display_link}
             reply_text = (
                 f"Hum samajh sakte hain {member.name.split()[0]}. Fitness accessible honi chahiye!\n\n"
                 f"Aap annual plan ki jagah hamare **Monthly Flexible Plan (₹2,499/mo)** par switch kar sakte hain. "
                 f"No long-term lock-in!\n\n"
-                f"👉 Instant Activation Link: {payment_link}\n"
+                f"👉 Instant Activation Link: {display_link}\n"
                 f"Bina heavy commitment ke workout continue kijiye! 💪"
             )
 
@@ -98,7 +99,7 @@ class ConversationalRecoveryAgent:
         elif intent == UserIntentType.REQUEST_DISCOUNT:
             # Maximum 15% discount bounded rule
             discount_pct = 15.0
-            discounted_amt = member.membership_amount * (1.0 - (discount_pct / 100.0))
+            discounted_amt = round(member.membership_amount * (1.0 - (discount_pct / 100.0)), 2)
             link_res = self.rzp.create_dynamic_payment_link(
                 amount_inr=discounted_amt,
                 member_name=member.name,
@@ -107,11 +108,14 @@ class ConversationalRecoveryAgent:
                 description=f"GymOS Exclusive Retention - {member.membership_tier.value}"
             )
             payment_link = link_res.get("short_url")
-            action_executed = {"action": "DISCOUNT_GRANTED", "discount_percent": discount_pct, "razorpay_link": payment_link}
+            mock_id = link_res.get("id", "plink_pay")
+            display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{mock_id}")
+            action_executed = {"action": "DISCOUNT_GRANTED", "discount_percent": discount_pct, "razorpay_link": payment_link, "display_url": display_link}
+            display_amt_str = f"{discounted_amt:,.0f}" if discounted_amt.is_integer() or discounted_amt == int(discounted_amt) else f"{discounted_amt:,.2f}"
             reply_text = (
                 f"Special loyalty member hone ke naate, humne aapke account par **{discount_pct:.0f}% direct discount** apply kiya hai! 🎉\n\n"
-                f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{discounted_amt:,.0f}**\n"
-                f"👉 Secure Razorpay Link: {payment_link}\n"
+                f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
+                f"👉 Secure Razorpay Link: {display_link}\n"
                 f"(Offer valid for next 24 hours only)"
             )
 
@@ -133,11 +137,13 @@ class ConversationalRecoveryAgent:
                 description=f"GymOS Renewal - {member.membership_tier.value}"
             )
             payment_link = link_res.get("short_url")
-            action_executed = {"action": "STANDARD_LINK_DISPATCH", "razorpay_link": payment_link}
+            mock_id = link_res.get("id", "plink_pay")
+            display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{mock_id}")
+            action_executed = {"action": "STANDARD_LINK_DISPATCH", "razorpay_link": payment_link, "display_url": display_link}
             reply_text = (
                 f"Hi {member.name.split()[0]}! Niche diye link par tap karke aap kisi bhi UPI app (GPay, PhonePe, Paytm) "
                 f"ya Card se 1-click mein renew kar sakte hain:\n\n"
-                f"👉 {payment_link}\n"
+                f"👉 {display_link}\n"
                 f"Amount: ₹{member.membership_amount:,.0f}"
             )
 

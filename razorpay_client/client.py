@@ -94,10 +94,13 @@ class RazorpayRecoveryClient:
         mock_id = f"plink_{uuid.uuid4().hex[:12]}"
         safe_name = member_name.replace(' ', '+') if member_name else 'Member'
         safe_tier = description.replace(' ', '+') if description else 'Renewal'
-        mock_url = f"/checkout?id={mock_id}&amount={amount_inr}&name={safe_name}&tier={safe_tier}"
+        amt_str = f"{amount_inr:.0f}" if amount_inr.is_integer() or amount_inr == int(amount_inr) else f"{amount_inr:.2f}"
+        mock_url = f"/checkout?id={mock_id}&amount={amt_str}&name={safe_name}&tier={safe_tier}"
+        short_display_url = f"https://rzp.io/i/{mock_id}"
         return {
             "id": mock_id,
             "short_url": mock_url,
+            "display_url": short_display_url,
             "amount": amount_inr,
             "currency": "INR",
             "status": "created",
