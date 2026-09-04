@@ -23,14 +23,25 @@ class WebhookProcessor:
         event = payload.get("event", "unknown")
         logger.info("Processing verified Razorpay Webhook event: %s", event)
 
-        if event == "payment_link.paid":
-            entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
+        if event in ("payment_link.paid", "order.paid"):
+            entity = payload.get("payload", {}).get("payment_link", {}).get("entity") or payload.get("payload", {}).get("order", {}).get("entity", {})
+            amount_val = entity.get("amount_paid") or entity.get("amount") or 0
             return {
                 "status": "PROCESSED",
                 "event": event,
                 "link_id": entity.get("id"),
-                "amount_paid_inr": (entity.get("amount_paid", 0) / 100.0),
-                "customer_phone": entity.get("customer", {}).get("contact"),
+                "amount_paid_inr": (amount_val / 100.0),
+                "customer_phone": entity.get("customer", {}).get("contact") if isinstance(entity.get("customer"), dict) else None,
+                "recovery_state": "SUCCESS"
+            }
+        elif event == "payment.captured":
+            payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+            amount_val = payment_entity.get("amount", 0)
+            return {
+                "status": "PROCESSED",
+                "event": event,
+                "payment_id": payment_entity.get("id"),
+                "amount_paid_inr": (amount_val / 100.0),
                 "recovery_state": "SUCCESS"
             }
         elif event == "payment.failed":

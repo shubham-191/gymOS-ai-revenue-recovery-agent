@@ -158,9 +158,16 @@
             activeKeyId = policies.razorpay_key_id;
             isLiveTestMode = true;
             const badge = document.getElementById('gateway-badge');
-            badge.innerText = '⚡ Razorpay Live Test (' + activeKeyId.substring(0, 8) + '...)';
-            badge.className = 'px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold border border-cyan-500/40';
-            document.getElementById('security-footer-label').innerText = 'Official Razorpay Test Mode · Key: ' + activeKeyId.substring(0, 8) + '...';
+            const isProd = activeKeyId.startsWith('rzp_live_');
+            if (isProd) {
+              badge.innerText = '⚡ Razorpay Production Live (' + activeKeyId.substring(0, 8) + '...)';
+              badge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/40 shadow-sm shadow-emerald-500/20';
+              document.getElementById('security-footer-label').innerText = 'Official Razorpay Live Production Gateway · Key: ' + activeKeyId.substring(0, 8) + '...';
+            } else {
+              badge.innerText = '⚡ Razorpay Live Test (' + activeKeyId.substring(0, 8) + '...)';
+              badge.className = 'px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold border border-cyan-500/40';
+              document.getElementById('security-footer-label').innerText = 'Official Razorpay Test Mode · Key: ' + activeKeyId.substring(0, 8) + '...';
+            }
             return;
           }
         }
