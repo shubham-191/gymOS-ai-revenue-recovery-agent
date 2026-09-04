@@ -63,15 +63,18 @@ class ConversationalRecoveryAgent:
         action_executed = {}
         payment_link = None
 
+        first_name = member.name.split()[0] if member.name else "Friend"
+
         if intent == UserIntentType.TRAVEL_OR_INJURY:
             freeze_days = extracted_data.get("days", 30)
             freeze_res = self.lifecycle.execute_freeze(member.member_id, freeze_days=freeze_days)
             action_executed = freeze_res
             reply_text = (
-                f"No worries at all, {member.name.split()[0]}! Health & travel come first. 🧘‍♂️\n\n"
-                f"Humne aapka GymOS membership & billing exactly **{freeze_days} dino ke liye freeze (pause)** kar diya hai "
-                f"(Resume date: {freeze_res['resume_date']}). Zero cancellation charge!\n\n"
-                f"Aapki membership **{freeze_res['resume_date']}** se seamless continue hogi bina kisi extra penalty ke. Get well soon / Safe travels! 🚀"
+                f"No problem at all, {first_name}! Health and travel always come first. 🧘‍♂️\n\n"
+                f"We have put a freeze (pause) on your GymOS membership and billing for **{freeze_days} days** "
+                f"(Resume date: {freeze_res['resume_date']}) with zero cancellation charges!\n\n"
+                f"Your membership will resume on **{freeze_res['resume_date']}** automatically with no extra penalty. "
+                f"Wishing you a speedy recovery and safe travels! 🚀"
             )
 
         elif intent == UserIntentType.PRICE_TOO_HIGH:
@@ -93,11 +96,11 @@ class ConversationalRecoveryAgent:
             display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{link_res.get('id', 'pay_now')}")
             action_executed = {**downgrade_res, "razorpay_link": payment_link, "display_url": display_link}
             reply_text = (
-                f"Hum samajh sakte hain {member.name.split()[0]}. Fitness accessible honi chahiye!\n\n"
-                f"Aap annual plan ki jagah hamare **Monthly Flexible Plan (₹2,499/mo)** par switch kar sakte hain. "
+                f"We completely understand, {first_name}. Staying fit should always be affordable!\n\n"
+                f"You can easily switch from the annual plan to our **Monthly Flexible Plan (₹2,499/mo)**. "
                 f"No long-term lock-in!\n\n"
                 f"👉 Instant Activation Link: {display_link}\n"
-                f"Bina heavy commitment ke workout continue kijiye! 💪"
+                f"Continue your workouts with total flexibility! 💪"
             )
 
         elif intent == UserIntentType.SALARY_DELAY_PROMISE:
@@ -105,15 +108,14 @@ class ConversationalRecoveryAgent:
             promise_res = self.lifecycle.execute_promise_to_pay(member.member_id, promised_date)
             action_executed = promise_res
             reply_text = (
-                f"Bilkul {member.name.split()[0]} bhai! ✅ Humne aapka renewal date **{promised_date}** par defer kar diya hai.\n\n"
-                f"Is beech aapka gym check-in access seamlessly active rahega. "
-                f"Hum {promised_date} ko reminder bhejenge. Have a great workout today! 🏋️‍♂️"
+                f"Sure thing, {first_name}! ✅ We have deferred your renewal payment date to **{promised_date}**.\n\n"
+                f"Your gym check-in access remains active in the meantime. "
+                f"We will send you a friendly reminder on **{promised_date}**. Have a great workout today! 🏋️‍♂️"
             )
 
         elif intent == UserIntentType.REQUEST_DISCOUNT:
             max_policy_discount = float(self.guardrail.max_discount)
             requested_pct = extracted_data.get("requested_percent")
-            first_name = member.name.split()[0] if member.name else "Friend"
 
             # 1. Zero Discount Policy Check (Merchant disabled discounts)
             if max_policy_discount <= 0.0:
@@ -123,13 +125,12 @@ class ConversationalRecoveryAgent:
                     "reason": "Merchant ZERO_DISCOUNT_POLICY active"
                 }
                 reply_text = (
-                    f"Hi {first_name}! Hamare current membership plans par direct cash discounts restricted hain "
-                    f"taaki sabhi members ko uniform fair pricing mile. 🤝\n\n"
-                    f"Lekin aapke continuous workouts ke liye humne aapke renewal ke saath "
+                    f"Hi {first_name}! Direct cash discounts are restricted on our plans to maintain fair pricing for all members. 🤝\n\n"
+                    f"However, to support your consistency, we have attached "
                     f"**1 Complementary Personal Trainer Session + 1 Nutrition Consultation (Worth ₹1,500)** "
-                    f"FREE attach kiya hai! 🏋️‍♂️\n\n"
+                    f"to your renewal for FREE! 🏋️‍♂️\n\n"
                     f"Original Amount: ₹{member.membership_amount:,.0f}\n"
-                    f"Bina workout break kiye continue karein!"
+                    f"Renew today and keep your fitness momentum going!"
                 )
                 return {
                     "intent": intent,
@@ -168,14 +169,12 @@ class ConversationalRecoveryAgent:
                     "display_url": display_link
                 }
                 reply_text = (
-                    f"Arre {first_name} bhai! Aap toh hamare super regular dedicated athlete hain "
-                    f"(Last 30 dino mein **{member.actual_visits_last_30_days} active workouts**)! 💪🔥\n\n"
-                    f"Direct fee discounts policy ke tahat sirf long-break / inactive members ke winback ke liye reserve hote hain. "
-                    f"Lekin aapki dedication celebrate karne ke liye, humne aapke renewal par "
-                    f"**FREE 1-on-1 Personal Trainer Assessment + InBody Body Composition Scan (Worth ₹1,200)** bilkul free unlock kar diya hai! 🏋️‍♂️\n\n"
+                    f"Hi {first_name}! You are one of our most dedicated athletes with **{member.actual_visits_last_30_days} active workouts in the last 30 days**! 💪🔥\n\n"
+                    f"Direct fee discounts are reserved strictly for members on long breaks. "
+                    f"To celebrate your dedication, we have unlocked a **FREE 1-on-1 Personal Trainer Assessment + InBody Body Composition Scan (Worth ₹1,200)** for your renewal!\n\n"
                     f"👉 Secure Renewal Link: {display_link}\n"
                     f"Amount: ₹{member.membership_amount:,.0f}\n"
-                    f"Apna workout streak bina kisi interruption ke maintain kijiye!"
+                    f"Keep your workout streak going without any interruption!"
                 )
                 return {
                     "intent": intent,
@@ -197,19 +196,15 @@ class ConversationalRecoveryAgent:
                 else:
                     discount_pct = requested_pct
             else:
-                # User asked generally: "any discount?", "best price", "kam karo"
-                # Check engagement & churn risk:
+                # User asked generally: "any discount?", "best price"
                 is_moderate_member = (member.days_since_last_checkin <= 14 and member.actual_visits_last_30_days >= 4)
                 is_at_risk_churn = (member.days_since_last_checkin > 14 or member.actual_visits_last_30_days < 4)
 
                 if is_moderate_member:
-                    # Moderate attendee asking casually -> offer modest starter token (e.g. 5%), not max margin!
                     discount_pct = min(5.0, max_policy_discount)
                 elif is_at_risk_churn:
-                    # At-risk silent churner -> offer meaningful retention discount
                     discount_pct = min(10.0, max_policy_discount)
                 else:
-                    # Standard member baseline
                     discount_pct = min(5.0, max_policy_discount)
 
             # Strict guardrail policy ceiling enforcement
@@ -239,27 +234,26 @@ class ConversationalRecoveryAgent:
 
             if was_clamped:
                 reply_text = (
-                    f"Aapne {requested_pct:.0f}% discount request kiya tha, lekin hamari strict system policy "
-                    f"maximum **{max_policy_discount:.0f}% margin discount** allow karti hai. 🛡️\n\n"
-                    f"Humne aapke account par best possible **{discount_pct:.0f}% discount** apply kar diya hai!\n"
+                    f"You requested a {requested_pct:.0f}% discount, but our gym policy allows a maximum **{max_policy_discount:.0f}% discount**. 🛡️\n\n"
+                    f"We have applied the maximum allowable **{discount_pct:.0f}% discount** to your account!\n"
                     f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
                     f"👉 Secure Razorpay Link: {display_link}\n"
-                    f"(Offer valid for next 24 hours only)"
+                    f"(Offer valid for the next 24 hours only)"
                 )
             else:
                 reply_text = (
-                    f"Special loyalty member hone ke naate, humne aapke account par **{discount_pct:.0f}% direct discount** apply kiya hai! 🎉\n\n"
+                    f"As a valued member, we have applied a **{discount_pct:.0f}% loyalty discount** to your account! 🎉\n\n"
                     f"Original: ₹{member.membership_amount:,.0f} ➔ **Special Price: ₹{display_amt_str}**\n"
                     f"👉 Secure Razorpay Link: {display_link}\n"
-                    f"(Offer valid for next 24 hours only)"
+                    f"(Offer valid for the next 24 hours only)"
                 )
 
         elif intent == UserIntentType.EXPLICIT_CANCELLATION:
             action_executed = {"action": "CANCELLATION_RECORDED", "opt_out": True}
             reply_text = (
-                f"We are sorry to see you go, {member.name.split()[0]}. 💔\n\n"
-                f"Aapki membership cancel request accept ho gayi hai. Future communications stop kar diye gaye hain. "
-                f"Whenever you're ready to restart your fitness journey, IronPeak Gym ke darwaaze hamesha khule hain! Wishing you the best!"
+                f"We are sorry to see you go, {first_name}. 💔\n\n"
+                f"Your membership cancellation request has been recorded, and all future reminder messages have been stopped. "
+                f"Whenever you are ready to restart your fitness journey, the doors at IronPeak Gym are always open. Wishing you all the best!"
             )
 
         else:
@@ -276,8 +270,7 @@ class ConversationalRecoveryAgent:
             display_link = link_res.get("display_url") or (payment_link if payment_link and payment_link.startswith("http") else f"https://rzp.io/i/{mock_id}")
             action_executed = {"action": "STANDARD_LINK_DISPATCH", "razorpay_link": payment_link, "display_url": display_link}
             reply_text = (
-                f"Hi {member.name.split()[0]}! Niche diye link par tap karke aap kisi bhi UPI app (GPay, PhonePe, Paytm) "
-                f"ya Card se 1-click mein renew kar sakte hain:\n\n"
+                f"Hi {first_name}! You can complete your renewal via UPI (Google Pay, PhonePe, Paytm), Netbanking, or Card using this link:\n\n"
                 f"👉 {display_link}\n"
                 f"Amount: ₹{member.membership_amount:,.0f}"
             )

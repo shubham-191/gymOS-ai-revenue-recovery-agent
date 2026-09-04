@@ -38,11 +38,11 @@ def test_chat_travel_exact_days_freeze(chat_agent, sample_member):
     assert res["intent"] == UserIntentType.TRAVEL_OR_INJURY
     assert res["action_executed"]["action"] == "FREEZE_MEMBERSHIP"
     assert res["action_executed"]["freeze_duration_days"] == 21
-    assert "21 dino ke liye freeze" in res["reply_message"]
+    assert "21 days" in res["reply_message"]
 
     res_10 = chat_agent.handle_incoming_message(sample_member, "Going on a family trip for 10 days, please pause.")
     assert res_10["action_executed"]["freeze_duration_days"] == 10
-    assert "10 dino ke liye freeze" in res_10["reply_message"]
+    assert "10 days" in res_10["reply_message"]
 
 
 def test_chat_price_resistance_downgrade(chat_agent, sample_member):
@@ -120,7 +120,7 @@ def test_chat_super_regular_discount_denied_with_value_add():
     assert res["action_executed"]["discount_percent"] == 0.0
     assert res["action_executed"]["is_super_regular"] is True
     assert res["action_executed"]["action"] == "DISCOUNT_DENIED_SUPER_REGULAR"
-    assert "super regular dedicated athlete" in res["reply_message"]
+    assert "dedicated" in res["reply_message"].lower()
     assert "InBody" in res["reply_message"]
 
 
